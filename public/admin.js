@@ -1,4 +1,5 @@
 // Calboard Admin Panel JavaScript
+// Supports all features including themes, accessibility, and advanced settings
 
 class CalboardAdmin {
   constructor() {
@@ -19,12 +20,13 @@ class CalboardAdmin {
     }
 
     this.bindEvents();
+    this.setupTabs();
   }
 
   async checkAuthRequired() {
     try {
       const response = await fetch('/api/admin/auth-required', {
-        credentials: 'same-origin' // Include cookies
+        credentials: 'same-origin'
       });
       return await response.json();
     } catch (err) {
@@ -45,9 +47,7 @@ class CalboardAdmin {
     try {
       const response = await fetch('/api/admin/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         body: JSON.stringify({ password })
       });
@@ -79,12 +79,9 @@ class CalboardAdmin {
   }
 
   async fetchWithAuth(url, options = {}) {
-    // Always include credentials for session cookies
     options.credentials = 'same-origin';
-
     const response = await fetch(url, options);
 
-    // If we get a 401, redirect to login
     if (response.status === 401) {
       this.showLoginModal();
       throw new Error('Session expired. Please login again.');
@@ -115,18 +112,41 @@ class CalboardAdmin {
     document.getElementById('weather-lat').value = this.config.weather?.latitude || '';
     document.getElementById('weather-lon').value = this.config.weather?.longitude || '';
     document.getElementById('weather-units').value = this.config.weather?.units || 'imperial';
+    document.getElementById('weather-show-alerts').checked = this.config.weather?.showAlerts !== false;
+    document.getElementById('weather-show-aqi').checked = this.config.weather?.showAirQuality !== false;
 
     // Display settings
     document.getElementById('display-days').value = this.config.display?.daysToShow || 7;
     document.getElementById('display-refresh').value = this.config.display?.refreshIntervalMinutes || 5;
     document.getElementById('display-time-format').value = this.config.display?.timeFormat || '12h';
     document.getElementById('display-date-format').value = this.config.display?.dateFormat || 'en-US';
+    document.getElementById('display-theme').value = this.config.display?.theme || 'dark';
+    document.getElementById('display-calendar-view').value = this.config.display?.calendarView || 'list';
     document.getElementById('display-background').value = this.config.display?.backgroundImage || '';
+    document.getElementById('display-slideshow').checked = this.config.display?.backgroundSlideshow || false;
+    document.getElementById('display-slideshow-interval').value = this.config.display?.slideshowInterval || 30;
+    document.getElementById('display-slideshow-images').value = (this.config.display?.backgroundImages || []).join(', ');
+    document.getElementById('display-show-duration').checked = this.config.display?.showEventDuration !== false;
+    document.getElementById('display-show-countdown').checked = this.config.display?.showEventCountdown !== false;
+    document.getElementById('display-show-badge').checked = this.config.display?.showTodayBadge !== false;
+    document.getElementById('display-custom-css').value = this.config.display?.customCSS || '';
+
+    // Features
+    document.getElementById('feature-wakelock').checked = this.config.features?.screenWakeLock !== false;
+    document.getElementById('feature-offline').checked = this.config.features?.offlineMode !== false;
+    document.getElementById('feature-birthday').checked = this.config.features?.birthdayRecognition !== false;
+    document.getElementById('feature-voice').checked = this.config.features?.voiceAnnouncements || false;
+    document.getElementById('feature-touch').checked = this.config.features?.touchGestures !== false;
+
+    // Accessibility
+    document.getElementById('access-high-contrast').checked = this.config.accessibility?.highContrast || false;
+    document.getElementById('access-large-text').checked = this.config.accessibility?.largeText || false;
+    document.getElementById('access-reduce-motion').checked = this.config.accessibility?.reduceMotion || false;
 
     // Server settings
     document.getElementById('server-port').value = this.config.server?.port || 3000;
 
-    // Admin settings - show placeholder if password is set
+    // Admin password
     const passwordField = document.getElementById('admin-password');
     if (this.config.admin?.passwordHash === '********' || this.config.admin?.password === '********') {
       passwordField.value = '********';
@@ -136,8 +156,9 @@ class CalboardAdmin {
       passwordField.placeholder = 'Set a password (min 8 characters)';
     }
 
-    // Calendars
+    // Render lists
     this.renderCalendars();
+    this.renderAdditionalLocations();
   }
 
   renderCalendars() {
@@ -159,8 +180,43 @@ class CalboardAdmin {
       container.appendChild(clone);
     });
 
-    // Bind calendar-specific events
     this.bindCalendarEvents();
+  }
+
+  renderAdditionalLocations() {
+    const container = document.getElementById('additional-locations-list');
+    const template = document.getElementById('location-template');
+    container.innerHTML = '';
+
+    (this.config.weather?.additionalLocations || []).forEach((loc, index) => {
+      const clone = template.content.cloneNode(true);
+      const item = clone.querySelector('.location-item');
+
+      item.dataset.index = index;
+      item.querySelector('.location-name-input').value = loc.name || '';
+      item.querySelector('.location-lat-input').value = loc.latitude || '';
+      item.querySelector('.location-lon-input').value = loc.longitude || '';
+
+      container.appendChild(clone);
+    });
+
+    this.bindLocationEvents();
+  }
+
+  setupTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const tabId = e.target.dataset.tab;
+
+        // Update active tab button
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+
+        // Update active tab content
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+      });
+    });
   }
 
   bindEvents() {
@@ -171,7 +227,6 @@ class CalboardAdmin {
       const errorEl = document.getElementById('login-error');
       const submitBtn = e.target.querySelector('button[type="submit"]');
 
-      // Disable button during login
       submitBtn.disabled = true;
       submitBtn.textContent = 'Logging in...';
 
@@ -196,6 +251,9 @@ class CalboardAdmin {
     // Add calendar button
     document.getElementById('add-calendar-btn').addEventListener('click', () => this.addCalendar());
 
+    // Add location button
+    document.getElementById('add-location-btn').addEventListener('click', () => this.addLocation());
+
     // Test weather button
     document.getElementById('test-weather-btn').addEventListener('click', () => this.testWeather());
 
@@ -213,7 +271,7 @@ class CalboardAdmin {
     });
 
     // Track changes
-    document.querySelectorAll('input, select').forEach(el => {
+    document.querySelectorAll('input, select, textarea').forEach(el => {
       el.addEventListener('change', () => {
         this.unsavedChanges = true;
       });
@@ -227,15 +285,15 @@ class CalboardAdmin {
       }
     });
 
-    // Clear password placeholder on focus
-    document.getElementById('admin-password').addEventListener('focus', function() {
+    // Password field handling
+    const passwordField = document.getElementById('admin-password');
+    passwordField.addEventListener('focus', function() {
       if (this.value === '********') {
         this.value = '';
       }
     });
 
-    // Restore placeholder if empty on blur
-    document.getElementById('admin-password').addEventListener('blur', function() {
+    passwordField.addEventListener('blur', function() {
       if (this.value === '' && this.placeholder.includes('Password is set')) {
         this.value = '********';
       }
@@ -294,6 +352,24 @@ class CalboardAdmin {
     });
   }
 
+  bindLocationEvents() {
+    // Remove location buttons
+    document.querySelectorAll('.remove-location-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const item = e.target.closest('.location-item');
+        const index = parseInt(item.dataset.index);
+        this.removeLocation(index);
+      });
+    });
+
+    // Track changes
+    document.querySelectorAll('.location-name-input, .location-lat-input, .location-lon-input').forEach(input => {
+      input.addEventListener('change', () => {
+        this.unsavedChanges = true;
+      });
+    });
+  }
+
   addCalendar() {
     if (!this.config.calendars) {
       this.config.calendars = [];
@@ -325,13 +401,46 @@ class CalboardAdmin {
     }
   }
 
+  addLocation() {
+    if (!this.config.weather) {
+      this.config.weather = {};
+    }
+    if (!this.config.weather.additionalLocations) {
+      this.config.weather.additionalLocations = [];
+    }
+
+    this.config.weather.additionalLocations.push({
+      name: '',
+      latitude: 0,
+      longitude: 0
+    });
+
+    this.renderAdditionalLocations();
+    this.unsavedChanges = true;
+
+    // Focus the new location name
+    const items = document.querySelectorAll('.location-item');
+    const lastItem = items[items.length - 1];
+    if (lastItem) {
+      lastItem.querySelector('.location-name-input').focus();
+    }
+  }
+
+  removeLocation(index) {
+    if (confirm('Are you sure you want to remove this location?')) {
+      this.config.weather.additionalLocations.splice(index, 1);
+      this.renderAdditionalLocations();
+      this.unsavedChanges = true;
+    }
+  }
+
   getRandomColor() {
     const colors = ['#4CAF50', '#9C27B0', '#2196F3', '#FF9800', '#E91E63', '#00BCD4', '#8BC34A', '#FF5722'];
     return colors[Math.floor(Math.random() * colors.length)];
   }
 
   collectFormData() {
-    // Collect calendar data from form
+    // Collect calendar data
     const calendars = [];
     document.querySelectorAll('.calendar-item').forEach(item => {
       calendars.push({
@@ -341,6 +450,23 @@ class CalboardAdmin {
       });
     });
 
+    // Collect additional locations
+    const additionalLocations = [];
+    document.querySelectorAll('.location-item').forEach(item => {
+      const name = item.querySelector('.location-name-input').value.trim();
+      const lat = parseFloat(item.querySelector('.location-lat-input').value);
+      const lon = parseFloat(item.querySelector('.location-lon-input').value);
+      if (name && !isNaN(lat) && !isNaN(lon)) {
+        additionalLocations.push({ name, latitude: lat, longitude: lon });
+      }
+    });
+
+    // Parse slideshow images
+    const slideshowImagesStr = document.getElementById('display-slideshow-images').value;
+    const slideshowImages = slideshowImagesStr
+      ? slideshowImagesStr.split(',').map(s => s.trim()).filter(s => s)
+      : [];
+
     const passwordValue = document.getElementById('admin-password').value;
 
     return {
@@ -348,7 +474,10 @@ class CalboardAdmin {
         apiKey: document.getElementById('weather-api-key').value.trim(),
         latitude: parseFloat(document.getElementById('weather-lat').value) || 0,
         longitude: parseFloat(document.getElementById('weather-lon').value) || 0,
-        units: document.getElementById('weather-units').value
+        units: document.getElementById('weather-units').value,
+        showAlerts: document.getElementById('weather-show-alerts').checked,
+        showAirQuality: document.getElementById('weather-show-aqi').checked,
+        additionalLocations: additionalLocations
       },
       calendars: calendars,
       display: {
@@ -356,14 +485,38 @@ class CalboardAdmin {
         refreshIntervalMinutes: parseInt(document.getElementById('display-refresh').value) || 5,
         timeFormat: document.getElementById('display-time-format').value,
         dateFormat: document.getElementById('display-date-format').value,
-        backgroundImage: document.getElementById('display-background').value.trim() || null
+        theme: document.getElementById('display-theme').value,
+        calendarView: document.getElementById('display-calendar-view').value,
+        backgroundImage: document.getElementById('display-background').value.trim() || null,
+        backgroundSlideshow: document.getElementById('display-slideshow').checked,
+        slideshowInterval: parseInt(document.getElementById('display-slideshow-interval').value) || 30,
+        backgroundImages: slideshowImages,
+        showEventDuration: document.getElementById('display-show-duration').checked,
+        showEventCountdown: document.getElementById('display-show-countdown').checked,
+        showTodayBadge: document.getElementById('display-show-badge').checked,
+        customCSS: document.getElementById('display-custom-css').value,
+        hiddenCalendars: this.config.display?.hiddenCalendars || []
+      },
+      features: {
+        screenWakeLock: document.getElementById('feature-wakelock').checked,
+        offlineMode: document.getElementById('feature-offline').checked,
+        birthdayRecognition: document.getElementById('feature-birthday').checked,
+        voiceAnnouncements: document.getElementById('feature-voice').checked,
+        touchGestures: document.getElementById('feature-touch').checked
+      },
+      accessibility: {
+        highContrast: document.getElementById('access-high-contrast').checked,
+        largeText: document.getElementById('access-large-text').checked,
+        reduceMotion: document.getElementById('access-reduce-motion').checked
       },
       server: {
         port: parseInt(document.getElementById('server-port').value) || 3000
       },
       admin: {
         password: passwordValue || null
-      }
+      },
+      integrations: this.config.integrations || {},
+      setupComplete: true
     };
   }
 
@@ -382,9 +535,7 @@ class CalboardAdmin {
 
       const response = await this.fetchWithAuth('/api/admin/config', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newConfig)
       });
 
@@ -393,8 +544,6 @@ class CalboardAdmin {
       if (response.ok) {
         this.unsavedChanges = false;
         this.showStatus('success', 'Configuration saved successfully!');
-
-        // Reload config to get updated state
         await this.loadConfig();
       } else {
         throw new Error(data.error || 'Failed to save');
@@ -441,9 +590,7 @@ class CalboardAdmin {
     try {
       const response = await this.fetchWithAuth('/api/admin/test-weather', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           apiKey: document.getElementById('weather-api-key').value.trim(),
           latitude: parseFloat(document.getElementById('weather-lat').value),
@@ -488,9 +635,7 @@ class CalboardAdmin {
     try {
       const response = await this.fetchWithAuth('/api/admin/test-calendar', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
       });
 
@@ -516,7 +661,6 @@ class CalboardAdmin {
     statusBar.textContent = message;
     statusBar.className = 'status-bar ' + type;
 
-    // Auto-hide after 5 seconds
     setTimeout(() => {
       statusBar.className = 'status-bar';
     }, 5000);

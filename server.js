@@ -26,21 +26,57 @@ const DEFAULT_CONFIG = {
     apiKey: '',
     latitude: 0,
     longitude: 0,
-    units: 'imperial'
+    units: 'imperial',
+    showAlerts: true,
+    showAirQuality: true,
+    additionalLocations: []
   },
   calendars: [],
   display: {
     daysToShow: 7,
     refreshIntervalMinutes: 5,
     backgroundImage: null,
+    backgroundSlideshow: false,
+    backgroundImages: [],
+    slideshowInterval: 30,
     dateFormat: 'en-US',
-    timeFormat: '12h'
+    timeFormat: '12h',
+    theme: 'dark',
+    customCSS: '',
+    showEventDuration: true,
+    showEventCountdown: true,
+    showTodayBadge: true,
+    calendarView: 'list',
+    hiddenCalendars: []
   },
   server: {
     port: 3000
   },
   admin: {
     password: null
+  },
+  features: {
+    screenWakeLock: true,
+    offlineMode: true,
+    birthdayRecognition: true,
+    voiceAnnouncements: false,
+    touchGestures: true
+  },
+  integrations: {
+    homeAssistant: {
+      enabled: false,
+      url: '',
+      token: ''
+    },
+    tasks: {
+      enabled: false,
+      provider: null
+    }
+  },
+  accessibility: {
+    highContrast: false,
+    largeText: false,
+    reduceMotion: false
   },
   setupComplete: false
 };
@@ -497,7 +533,7 @@ app.post('/api/admin/logout', (req, res) => {
 // Weather API endpoint
 app.get('/api/weather', async (req, res) => {
   try {
-    const { apiKey, latitude, longitude, units } = config.weather || {};
+    const { apiKey, latitude, longitude, units, showAlerts, showAirQuality, additionalLocations } = config.weather || {};
 
     if (!apiKey) {
       return res.status(503).json({ error: 'Weather not configured' });
@@ -524,19 +560,97 @@ app.get('/api/weather', async (req, res) => {
     // Process forecast to get daily highs/lows
     const dailyForecast = processForecast(forecastData.list);
 
+    // Get weather alerts (One Call API 3.0 - may require subscription)
+    let alerts = [];
+    if (showAlerts) {
+      try {
+        const alertsUrl = `https://api.openweathermap.org/data/2.5/onecall?lat=${latitude}&lon=${longitude}&exclude=minutely,hourly,daily&appid=${apiKey}`;
+        const alertsResponse = await fetch(alertsUrl);
+        const alertsData = await alertsResponse.json();
+        if (alertsData.alerts) {
+          alerts = alertsData.alerts.map(a => ({
+            event: a.event,
+            sender: a.sender_name,
+            start: a.start * 1000,
+            end: a.end * 1000,
+            description: a.description
+          }));
+        }
+      } catch (alertErr) {
+        // Alerts API may not be available, continue without them
+        console.log('Weather alerts not available:', alertErr.message);
+      }
+    }
+
+    // Get air quality index
+    let airQuality = null;
+    if (showAirQuality) {
+      try {
+        const aqiUrl = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${latitude}&lon=${longitude}&appid=${apiKey}`;
+        const aqiResponse = await fetch(aqiUrl);
+        const aqiData = await aqiResponse.json();
+        if (aqiData.list && aqiData.list[0]) {
+          const aqi = aqiData.list[0];
+          airQuality = {
+            aqi: aqi.main.aqi, // 1-5 scale (1=Good, 5=Very Poor)
+            components: {
+              pm2_5: aqi.components.pm2_5,
+              pm10: aqi.components.pm10,
+              o3: aqi.components.o3,
+              no2: aqi.components.no2
+            }
+          };
+        }
+      } catch (aqiErr) {
+        console.log('Air quality data not available:', aqiErr.message);
+      }
+    }
+
+    // Get weather for additional locations
+    let additionalWeather = [];
+    if (additionalLocations && additionalLocations.length > 0) {
+      const locationPromises = additionalLocations.map(async (loc) => {
+        try {
+          const locUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${loc.latitude}&lon=${loc.longitude}&units=${units}&appid=${apiKey}`;
+          const locResponse = await fetch(locUrl);
+          const locData = await locResponse.json();
+          return {
+            name: loc.name,
+            temp: Math.round(locData.main.temp),
+            icon: locData.weather[0].icon,
+            description: locData.weather[0].description
+          };
+        } catch (err) {
+          return { name: loc.name, error: true };
+        }
+      });
+      additionalWeather = await Promise.all(locationPromises);
+    }
+
     res.json({
       current: {
         temp: Math.round(currentData.main.temp),
         feelsLike: Math.round(currentData.main.feels_like),
+        tempMin: Math.round(currentData.main.temp_min),
+        tempMax: Math.round(currentData.main.temp_max),
         humidity: currentData.main.humidity,
+        pressure: currentData.main.pressure,
         windSpeed: Math.round(currentData.wind.speed),
+        windDirection: currentData.wind.deg,
+        visibility: currentData.visibility,
+        clouds: currentData.clouds?.all,
         description: currentData.weather[0].description,
         icon: currentData.weather[0].icon,
         iconCode: currentData.weather[0].id,
         sunrise: currentData.sys.sunrise * 1000,
-        sunset: currentData.sys.sunset * 1000
+        sunset: currentData.sys.sunset * 1000,
+        location: currentData.name,
+        country: currentData.sys.country
       },
       forecast: dailyForecast,
+      alerts: alerts,
+      airQuality: airQuality,
+      additionalLocations: additionalWeather,
       units: units
     });
   } catch (err) {
@@ -625,9 +739,26 @@ app.get('/api/calendars', async (req, res) => {
 
     const grouped = groupEventsByDay(events);
 
+    // Calculate today's event count
+    const todayKey = now.toISOString().split('T')[0];
+    const todayGroup = grouped.find(g => g.date === todayKey);
+    const todayEventCount = todayGroup ? todayGroup.events.length : 0;
+
+    // Calculate upcoming important events for countdown
+    const importantEvents = events
+      .filter(e => e.eventType === 'birthday' || e.eventType === 'anniversary' || e.eventType === 'holiday')
+      .slice(0, 5)
+      .map(e => ({
+        ...e,
+        daysUntil: Math.ceil((new Date(e.start) - now) / (1000 * 60 * 60 * 24))
+      }));
+
     res.json({
       events: grouped,
-      daysToShow: daysToShow
+      daysToShow: daysToShow,
+      todayEventCount: todayEventCount,
+      totalEvents: events.length,
+      importantUpcoming: importantEvents
     });
   } catch (err) {
     console.error('Calendar API error:', err);
@@ -684,18 +815,46 @@ function parseICS(icsData, calendarName, color, startDate, endDate) {
 
 function createEventObject(event, start, end, calendarName, color) {
   const isAllDay = event.startDate.isDate;
+  const title = sanitizeString(event.summary || 'Untitled Event', 200);
+
+  // Calculate duration in minutes
+  const durationMs = end.getTime() - start.getTime();
+  const durationMinutes = Math.round(durationMs / (1000 * 60));
+
+  // Detect special event types (birthdays, anniversaries)
+  const lowerTitle = title.toLowerCase();
+  let eventType = 'regular';
+  if (lowerTitle.includes('birthday') || lowerTitle.includes('bday') || lowerTitle.includes("'s birthday")) {
+    eventType = 'birthday';
+  } else if (lowerTitle.includes('anniversary')) {
+    eventType = 'anniversary';
+  } else if (lowerTitle.includes('holiday') || calendarName.toLowerCase().includes('holiday')) {
+    eventType = 'holiday';
+  }
 
   return {
     id: event.uid + '_' + start.getTime(),
-    title: sanitizeString(event.summary || 'Untitled Event', 200),
+    title: title,
     start: start.toISOString(),
     end: end.toISOString(),
     allDay: isAllDay,
+    duration: durationMinutes,
+    durationFormatted: formatDuration(durationMinutes, isAllDay),
     calendar: sanitizeString(calendarName, 100),
     color: validateColor(color) ? color : '#4CAF50',
     location: event.location ? sanitizeString(event.location, 200) : null,
+    eventType: eventType,
     description: null // Don't expose descriptions for privacy
   };
+}
+
+function formatDuration(minutes, isAllDay) {
+  if (isAllDay) return 'All day';
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (mins === 0) return `${hours}h`;
+  return `${hours}h ${mins}m`;
 }
 
 function groupEventsByDay(events) {
@@ -721,12 +880,38 @@ function groupEventsByDay(events) {
 // Config endpoint (only non-sensitive data)
 app.get('/api/config', (req, res) => {
   res.json({
-    display: config.display,
+    display: config.display || DEFAULT_CONFIG.display,
+    features: config.features || DEFAULT_CONFIG.features,
+    accessibility: config.accessibility || DEFAULT_CONFIG.accessibility,
     calendarCount: config.calendars?.length || 0,
     calendarNames: (config.calendars || []).map(c => ({
       name: sanitizeString(c.name, 100),
       color: validateColor(c.color) ? c.color : '#4CAF50'
-    }))
+    })),
+    weather: {
+      showAlerts: config.weather?.showAlerts ?? true,
+      showAirQuality: config.weather?.showAirQuality ?? true,
+      hasAdditionalLocations: (config.weather?.additionalLocations?.length || 0) > 0
+    }
+  });
+});
+
+// Serve service worker for offline mode
+app.get('/sw.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'sw.js'));
+});
+
+// Generate QR code for admin access
+app.get('/api/admin/qrcode', adminAuth, (req, res) => {
+  const host = req.get('host');
+  const protocol = req.secure ? 'https' : 'http';
+  const adminUrl = `${protocol}://${host}/admin`;
+
+  // Generate simple QR code data URL using a basic approach
+  // For production, you'd use a library like 'qrcode'
+  res.json({
+    url: adminUrl,
+    message: 'Scan to access admin panel'
   });
 });
 

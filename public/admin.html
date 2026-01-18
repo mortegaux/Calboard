@@ -42,123 +42,358 @@
     <!-- Status Messages -->
     <div class="status-bar" id="status-bar"></div>
 
+    <!-- Navigation Tabs -->
+    <nav class="admin-tabs">
+      <button class="tab-btn active" data-tab="weather">Weather</button>
+      <button class="tab-btn" data-tab="calendars">Calendars</button>
+      <button class="tab-btn" data-tab="display">Display</button>
+      <button class="tab-btn" data-tab="features">Features</button>
+      <button class="tab-btn" data-tab="accessibility">Accessibility</button>
+      <button class="tab-btn" data-tab="security">Security</button>
+    </nav>
+
     <!-- Main Content -->
     <main class="admin-main">
-      <!-- Weather Settings -->
-      <section class="settings-section">
-        <h2>Weather Settings</h2>
-        <div class="settings-card">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="weather-api-key">OpenWeatherMap API Key</label>
-              <div class="input-with-button">
-                <input type="password" id="weather-api-key" placeholder="Enter your API key">
-                <button type="button" class="btn btn-small" id="toggle-api-key">Show</button>
+      <!-- Weather Settings Tab -->
+      <section class="tab-content active" id="tab-weather">
+        <div class="settings-section">
+          <h2>Weather API</h2>
+          <div class="settings-card">
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label for="weather-api-key">OpenWeatherMap API Key</label>
+                <div class="input-with-button">
+                  <input type="password" id="weather-api-key" placeholder="Enter your API key">
+                  <button type="button" class="btn btn-small" id="toggle-api-key">Show</button>
+                </div>
+                <span class="help-text">Get a free key at <a href="https://openweathermap.org/api" target="_blank">openweathermap.org</a></span>
               </div>
-              <span class="help-text">Get a free key at <a href="https://openweathermap.org/api" target="_blank">openweathermap.org</a></span>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="weather-lat">Latitude</label>
+                <input type="number" id="weather-lat" step="0.0001" placeholder="30.2672">
+              </div>
+              <div class="form-group">
+                <label for="weather-lon">Longitude</label>
+                <input type="number" id="weather-lon" step="0.0001" placeholder="-97.7431">
+              </div>
+              <div class="form-group">
+                <label for="weather-units">Units</label>
+                <select id="weather-units">
+                  <option value="imperial">Imperial (°F, mph)</option>
+                  <option value="metric">Metric (°C, m/s)</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="weather-show-alerts" checked>
+                  <span>Show Weather Alerts</span>
+                </label>
+              </div>
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="weather-show-aqi" checked>
+                  <span>Show Air Quality Index</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" id="test-weather-btn">Test Connection</button>
+              <span class="test-result" id="weather-test-result"></span>
             </div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="weather-lat">Latitude</label>
-              <input type="number" id="weather-lat" step="0.0001" placeholder="30.2672">
-            </div>
-            <div class="form-group">
-              <label for="weather-lon">Longitude</label>
-              <input type="number" id="weather-lon" step="0.0001" placeholder="-97.7431">
-            </div>
-            <div class="form-group">
-              <label for="weather-units">Units</label>
-              <select id="weather-units">
-                <option value="imperial">Imperial (°F, mph)</option>
-                <option value="metric">Metric (°C, m/s)</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-actions">
-            <button type="button" class="btn btn-secondary" id="test-weather-btn">Test Connection</button>
-            <span class="test-result" id="weather-test-result"></span>
+        </div>
+
+        <div class="settings-section">
+          <h2>Additional Locations</h2>
+          <div class="settings-card">
+            <p class="help-text" style="margin-bottom: 15px;">Track weather in other locations (e.g., family homes, vacation spots)</p>
+            <div id="additional-locations-list"></div>
+            <button type="button" class="btn btn-secondary" id="add-location-btn">+ Add Location</button>
           </div>
         </div>
       </section>
 
-      <!-- Calendar Settings -->
-      <section class="settings-section">
-        <h2>Calendars</h2>
-        <div class="settings-card">
-          <div id="calendars-list" class="calendars-list">
-            <!-- Calendar items will be added here dynamically -->
+      <!-- Calendars Tab -->
+      <section class="tab-content" id="tab-calendars">
+        <div class="settings-section">
+          <h2>Calendars</h2>
+          <div class="settings-card">
+            <div id="calendars-list" class="calendars-list">
+              <!-- Calendar items will be added here dynamically -->
+            </div>
+            <button type="button" class="btn btn-secondary" id="add-calendar-btn">+ Add Calendar</button>
           </div>
-          <button type="button" class="btn btn-secondary" id="add-calendar-btn">+ Add Calendar</button>
         </div>
       </section>
 
-      <!-- Display Settings -->
-      <section class="settings-section">
-        <h2>Display Settings</h2>
-        <div class="settings-card">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="display-days">Days to Show</label>
-              <input type="number" id="display-days" min="1" max="14" value="7">
+      <!-- Display Settings Tab -->
+      <section class="tab-content" id="tab-display">
+        <div class="settings-section">
+          <h2>General Display</h2>
+          <div class="settings-card">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="display-days">Days to Show</label>
+                <input type="number" id="display-days" min="1" max="30" value="7">
+              </div>
+              <div class="form-group">
+                <label for="display-refresh">Refresh Interval (minutes)</label>
+                <input type="number" id="display-refresh" min="1" max="60" value="5">
+              </div>
             </div>
-            <div class="form-group">
-              <label for="display-refresh">Refresh Interval (minutes)</label>
-              <input type="number" id="display-refresh" min="1" max="60" value="5">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="display-time-format">Time Format</label>
+                <select id="display-time-format">
+                  <option value="12h">12 Hour (AM/PM)</option>
+                  <option value="24h">24 Hour</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="display-date-format">Date Locale</label>
+                <select id="display-date-format">
+                  <option value="en-US">English (US)</option>
+                  <option value="en-GB">English (UK)</option>
+                  <option value="de-DE">German</option>
+                  <option value="fr-FR">French</option>
+                  <option value="es-ES">Spanish</option>
+                  <option value="it-IT">Italian</option>
+                  <option value="pt-BR">Portuguese (Brazil)</option>
+                  <option value="ja-JP">Japanese</option>
+                  <option value="zh-CN">Chinese (Simplified)</option>
+                  <option value="ko-KR">Korean</option>
+                </select>
+              </div>
             </div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="display-time-format">Time Format</label>
-              <select id="display-time-format">
-                <option value="12h">12 Hour (AM/PM)</option>
-                <option value="24h">24 Hour</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="display-date-format">Date Locale</label>
-              <select id="display-date-format">
-                <option value="en-US">English (US)</option>
-                <option value="en-GB">English (UK)</option>
-                <option value="de-DE">German</option>
-                <option value="fr-FR">French</option>
-                <option value="es-ES">Spanish</option>
-              </select>
+        </div>
+
+        <div class="settings-section">
+          <h2>Theme</h2>
+          <div class="settings-card">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="display-theme">Color Theme</label>
+                <select id="display-theme">
+                  <option value="dark">Dark (Default)</option>
+                  <option value="light">Light</option>
+                  <option value="blue">Blue</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="display-calendar-view">Default Calendar View</label>
+                <select id="display-calendar-view">
+                  <option value="list">List View</option>
+                  <option value="week">Week View</option>
+                </select>
+              </div>
             </div>
           </div>
-          <div class="form-row">
+        </div>
+
+        <div class="settings-section">
+          <h2>Background</h2>
+          <div class="settings-card">
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label for="display-background">Background Image Path</label>
+                <input type="text" id="display-background" placeholder="/backgrounds/image.jpg">
+                <span class="help-text">Place images in the public/backgrounds/ folder</span>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="display-slideshow">
+                  <span>Enable Background Slideshow</span>
+                </label>
+              </div>
+              <div class="form-group">
+                <label for="display-slideshow-interval">Slideshow Interval (seconds)</label>
+                <input type="number" id="display-slideshow-interval" min="5" max="300" value="30">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label for="display-slideshow-images">Slideshow Images (comma-separated paths)</label>
+                <input type="text" id="display-slideshow-images" placeholder="/backgrounds/img1.jpg, /backgrounds/img2.jpg">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h2>Calendar Options</h2>
+          <div class="settings-card">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="display-show-duration" checked>
+                  <span>Show Event Duration</span>
+                </label>
+              </div>
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="display-show-countdown" checked>
+                  <span>Show Event Countdowns</span>
+                </label>
+              </div>
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="display-show-badge" checked>
+                  <span>Show Today's Event Badge</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h2>Custom CSS</h2>
+          <div class="settings-card">
             <div class="form-group full-width">
-              <label for="display-background">Background Image Path</label>
-              <input type="text" id="display-background" placeholder="/backgrounds/image.jpg">
-              <span class="help-text">Place images in the public/backgrounds/ folder</span>
+              <label for="display-custom-css">Custom CSS (Advanced)</label>
+              <textarea id="display-custom-css" rows="6" placeholder="/* Add custom styles here */"></textarea>
+              <span class="help-text">Use CSS to customize the appearance. Changes apply immediately.</span>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Server Settings -->
-      <section class="settings-section">
-        <h2>Server Settings</h2>
-        <div class="settings-card">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="server-port">Port</label>
-              <input type="number" id="server-port" min="1" max="65535" value="3000">
-              <span class="help-text">Requires restart to take effect</span>
+      <!-- Features Tab -->
+      <section class="tab-content" id="tab-features">
+        <div class="settings-section">
+          <h2>Screen & Display</h2>
+          <div class="settings-card">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="feature-wakelock" checked>
+                  <span>Prevent Screen Sleep</span>
+                </label>
+                <span class="help-text">Keeps the screen on when viewing the dashboard</span>
+              </div>
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="feature-offline" checked>
+                  <span>Offline Mode</span>
+                </label>
+                <span class="help-text">Cache data for offline viewing</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h2>Calendar Features</h2>
+          <div class="settings-card">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="feature-birthday" checked>
+                  <span>Birthday Recognition</span>
+                </label>
+                <span class="help-text">Highlight birthdays and anniversaries</span>
+              </div>
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="feature-voice">
+                  <span>Voice Announcements</span>
+                </label>
+                <span class="help-text">Speak weather alerts aloud</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h2>Touch & Gestures</h2>
+          <div class="settings-card">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="feature-touch" checked>
+                  <span>Touch Gestures</span>
+                </label>
+                <span class="help-text">Swipe to change views, pull to refresh</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Admin Settings -->
-      <section class="settings-section">
-        <h2>Admin Security</h2>
-        <div class="settings-card">
-          <div class="form-row">
-            <div class="form-group full-width">
-              <label for="admin-password">Admin Password</label>
-              <input type="password" id="admin-password" placeholder="Leave blank for no password">
-              <span class="help-text">Set a password to protect this settings page. Leave blank to disable authentication.</span>
+      <!-- Accessibility Tab -->
+      <section class="tab-content" id="tab-accessibility">
+        <div class="settings-section">
+          <h2>Visual Accessibility</h2>
+          <div class="settings-card">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="access-high-contrast">
+                  <span>High Contrast Mode</span>
+                </label>
+                <span class="help-text">Increase text contrast for better readability</span>
+              </div>
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="access-large-text">
+                  <span>Large Text</span>
+                </label>
+                <span class="help-text">Increase text size by 25%</span>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="access-reduce-motion">
+                  <span>Reduce Motion</span>
+                </label>
+                <span class="help-text">Disable animations and transitions</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Security Tab -->
+      <section class="tab-content" id="tab-security">
+        <div class="settings-section">
+          <h2>Admin Security</h2>
+          <div class="settings-card">
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label for="admin-password">Admin Password</label>
+                <input type="password" id="admin-password" placeholder="Leave blank for no password">
+                <span class="help-text">Set a password to protect this settings page. Leave blank to disable authentication.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h2>Server Settings</h2>
+          <div class="settings-card">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="server-port">Port</label>
+                <input type="number" id="server-port" min="1" max="65535" value="3000">
+                <span class="help-text">Requires restart to take effect</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h2>Admin Access</h2>
+          <div class="settings-card">
+            <p class="help-text">Scan this QR code to access the admin panel from your phone:</p>
+            <div id="qr-code-container" class="qr-container">
+              <p class="help-text">QR code will appear here after saving</p>
             </div>
           </div>
         </div>
@@ -194,6 +429,29 @@
         <div class="form-actions">
           <button type="button" class="btn btn-small btn-secondary test-calendar-btn">Test URL</button>
           <span class="test-result calendar-test-result"></span>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Additional Location Template -->
+  <template id="location-template">
+    <div class="location-item" data-index="">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Location Name</label>
+          <input type="text" class="location-name-input" placeholder="e.g., Parents' House">
+        </div>
+        <div class="form-group">
+          <label>Latitude</label>
+          <input type="number" class="location-lat-input" step="0.0001" placeholder="30.2672">
+        </div>
+        <div class="form-group">
+          <label>Longitude</label>
+          <input type="number" class="location-lon-input" step="0.0001" placeholder="-97.7431">
+        </div>
+        <div class="form-group form-actions-inline">
+          <button type="button" class="btn btn-icon btn-danger remove-location-btn" title="Remove">×</button>
         </div>
       </div>
     </div>

@@ -415,3 +415,181 @@ select {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* ==========================================
+   Tab Navigation
+   ========================================== */
+
+.admin-tabs {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.tab-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.tab-btn.active {
+  background: #4CAF50;
+  border-color: #4CAF50;
+  color: #fff;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* ==========================================
+   Checkbox Label
+   ========================================== */
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 5px 0;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #4CAF50;
+  cursor: pointer;
+}
+
+.checkbox-label span {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ==========================================
+   Location Items
+   ========================================== */
+
+.location-item {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 10px;
+}
+
+.location-item .form-row {
+  margin-bottom: 0;
+  align-items: flex-end;
+}
+
+.form-actions-inline {
+  display: flex;
+  align-items: flex-end;
+  flex: 0 0 auto !important;
+  padding-bottom: 6px;
+}
+
+/* ==========================================
+   Textarea
+   ========================================== */
+
+textarea {
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: 'Roboto Mono', 'Monaco', 'Consolas', monospace;
+  color: #fff;
+  resize: vertical;
+  min-height: 100px;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #64b5f6;
+  box-shadow: 0 0 0 3px rgba(100, 181, 246, 0.2);
+}
+
+textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* ==========================================
+   QR Code Container
+   ========================================== */
+
+.qr-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin-top: 15px;
+  min-height: 150px;
+}
+
+.qr-container img {
+  max-width: 150px;
+  height: auto;
+}
+
+.qr-container p {
+  margin-top: 10px;
+  text-align: center;
+}
+
+/* ==========================================
+   Additional Mobile Responsive Styles
+   ========================================== */
+
+@media (max-width: 600px) {
+  .admin-tabs {
+    flex-wrap: nowrap;
+    padding-bottom: 10px;
+  }
+
+  .tab-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .settings-card {
+    padding: 15px;
+  }
+
+  .location-item .form-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .location-item .form-actions-inline {
+    align-self: flex-end;
+  }
+}

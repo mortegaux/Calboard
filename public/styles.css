@@ -1,4 +1,65 @@
-/* Reset and base styles */
+/* Calboard - Calendar & Weather Dashboard Styles */
+/* Includes themes, accessibility, and all feature styles */
+
+/* ==========================================
+   CSS Variables & Themes
+   ========================================== */
+
+:root {
+  /* Dark theme (default) */
+  --bg-primary: #000;
+  --bg-secondary: rgba(0, 0, 0, 0.95);
+  --bg-panel: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5));
+  --bg-card: rgba(255, 255, 255, 0.05);
+  --text-primary: #fff;
+  --text-secondary: rgba(255, 255, 255, 0.8);
+  --text-muted: rgba(255, 255, 255, 0.6);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --accent-color: #4CAF50;
+  --error-color: #ef5350;
+  --warning-color: #FF9800;
+  --success-color: #4CAF50;
+}
+
+.theme-light {
+  --bg-primary: #f5f5f5;
+  --bg-secondary: #ffffff;
+  --bg-panel: linear-gradient(to bottom, rgba(255, 255, 255, 0.9), rgba(240, 240, 240, 0.9));
+  --bg-card: rgba(0, 0, 0, 0.05);
+  --text-primary: #212121;
+  --text-secondary: rgba(0, 0, 0, 0.8);
+  --text-muted: rgba(0, 0, 0, 0.6);
+  --border-color: rgba(0, 0, 0, 0.1);
+}
+
+.theme-blue {
+  --bg-primary: #0a1929;
+  --bg-secondary: #0d2137;
+  --bg-panel: linear-gradient(to bottom, rgba(10, 25, 41, 0.9), rgba(13, 33, 55, 0.7));
+  --accent-color: #2196F3;
+}
+
+/* Accessibility */
+.high-contrast {
+  --text-primary: #fff;
+  --text-secondary: #fff;
+  --text-muted: #ddd;
+  --border-color: #fff;
+}
+
+.large-text {
+  font-size: 1.25em;
+}
+
+.reduce-motion * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* ==========================================
+   Reset & Base Styles
+   ========================================== */
+
 * {
   margin: 0;
   padding: 0;
@@ -12,25 +73,152 @@ html, body {
 
 body {
   font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: #000;
-  color: #fff;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
-/* Dashboard Layout */
+/* ==========================================
+   Connection Status
+   ========================================== */
+
+.connection-status {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.connection-status.online {
+  background: rgba(76, 175, 80, 0.2);
+  border: 1px solid rgba(76, 175, 80, 0.4);
+  color: #81c784;
+}
+
+.connection-status.offline {
+  background: rgba(244, 67, 54, 0.2);
+  border: 1px solid rgba(244, 67, 54, 0.4);
+  color: #ef5350;
+}
+
+.connection-status.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.connection-status .status-icon::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+.connection-status.online .status-icon::before {
+  background: #4CAF50;
+}
+
+.connection-status.offline .status-icon::before {
+  background: #f44336;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ==========================================
+   Weather Alerts Banner
+   ========================================== */
+
+.weather-alerts {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  display: none;
+}
+
+.alert-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: linear-gradient(90deg, rgba(255, 152, 0, 0.9), rgba(255, 87, 34, 0.9));
+  color: #fff;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+.alert-icon {
+  font-size: 20px;
+}
+
+.alert-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.alert-content strong {
+  font-size: 14px;
+}
+
+.alert-time {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.alert-dismiss {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0 8px;
+  opacity: 0.8;
+}
+
+.alert-dismiss:hover {
+  opacity: 1;
+}
+
+/* ==========================================
+   Dashboard Layout
+   ========================================== */
+
 .dashboard {
   display: flex;
   height: 100vh;
   width: 100vw;
 }
 
-/* Left Panel - Weather */
+/* ==========================================
+   Left Panel - Weather
+   ========================================== */
+
 .left-panel {
   width: 420px;
   min-width: 420px;
   position: relative;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5));
+  background: var(--bg-panel);
 }
 
 .background-image {
@@ -43,6 +231,7 @@ body {
   background-size: cover;
   background-position: center;
   opacity: 0.6;
+  transition: background-image 1s ease;
 }
 
 .weather-section {
@@ -52,11 +241,17 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 
-/* Time Display */
+/* ==========================================
+   Time Display
+   ========================================== */
+
 .time-display {
   margin-bottom: 5px;
+  position: relative;
+  display: inline-block;
 }
 
 .time {
@@ -64,6 +259,7 @@ body {
   font-weight: 300;
   letter-spacing: -2px;
   line-height: 1;
+  color: var(--text-primary);
 }
 
 .seconds {
@@ -72,6 +268,7 @@ body {
   vertical-align: super;
   margin-left: 4px;
   opacity: 0.8;
+  color: var(--text-secondary);
 }
 
 .date-display {
@@ -79,14 +276,41 @@ body {
   font-weight: 300;
   opacity: 0.9;
   margin-bottom: 30px;
+  color: var(--text-secondary);
 }
 
-/* Current Weather */
+/* Today Badge */
+.today-badge {
+  position: absolute;
+  top: 0;
+  right: -30px;
+  width: 28px;
+  height: 28px;
+  background: var(--accent-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  animation: badgePop 0.3s ease;
+}
+
+@keyframes badgePop {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* ==========================================
+   Current Weather
+   ========================================== */
+
 .current-weather {
   display: flex;
   align-items: center;
   gap: 20px;
-  margin-bottom: 25px;
+  margin-bottom: 15px;
 }
 
 .current-temp {
@@ -98,12 +322,14 @@ body {
   font-size: 72px;
   font-weight: 300;
   line-height: 1;
+  color: var(--text-primary);
 }
 
 .temp-unit {
   font-size: 36px;
   font-weight: 300;
   margin-top: 8px;
+  color: var(--text-secondary);
 }
 
 .weather-icon {
@@ -129,13 +355,61 @@ body {
   stroke-linecap: round;
 }
 
-/* Forecast */
+/* Feels Like */
+.feels-like {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.feels-like-label {
+  opacity: 0.7;
+}
+
+.feels-like-value {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* Air Quality */
+.air-quality {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  background: var(--bg-card);
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.aqi-label {
+  opacity: 0.7;
+}
+
+.aqi-value {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.aqi-text {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* ==========================================
+   Forecast
+   ========================================== */
+
 .forecast {
   display: flex;
   gap: 10px;
   padding: 15px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
   margin-bottom: 20px;
 }
 
@@ -149,6 +423,7 @@ body {
   font-weight: 500;
   margin-bottom: 8px;
   opacity: 0.9;
+  color: var(--text-secondary);
 }
 
 .forecast-icon {
@@ -169,6 +444,7 @@ body {
   font-size: 12px;
   opacity: 0.7;
   margin-bottom: 5px;
+  color: var(--text-muted);
 }
 
 .drop-icon {
@@ -184,18 +460,23 @@ body {
 .forecast-temps .high {
   font-size: 16px;
   font-weight: 500;
+  color: var(--text-primary);
 }
 
 .forecast-temps .low {
   font-size: 14px;
   opacity: 0.6;
+  color: var(--text-muted);
 }
 
-/* Weather Details */
+/* ==========================================
+   Weather Details
+   ========================================== */
+
 .weather-details {
-  display: flex;
-  gap: 30px;
-  margin-top: auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
   padding-top: 20px;
 }
 
@@ -211,21 +492,128 @@ body {
 }
 
 .detail-label {
-  font-size: 12px;
+  font-size: 11px;
   opacity: 0.7;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  color: var(--text-muted);
 }
 
 .detail-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* ==========================================
+   Additional Locations
+   ========================================== */
+
+.additional-locations {
+  display: none;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color);
+}
+
+.locations-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.6;
+  margin-bottom: 10px;
+}
+
+.location-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.location-name {
+  flex: 1;
   font-size: 14px;
+}
+
+.location-temp {
+  font-size: 16px;
   font-weight: 500;
 }
 
-/* Right Panel - Calendar */
+.location-item.error {
+  opacity: 0.5;
+}
+
+/* ==========================================
+   Countdowns
+   ========================================== */
+
+.countdowns {
+  display: none;
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.countdowns-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.6;
+  margin-bottom: 10px;
+}
+
+.countdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.countdown-item.birthday {
+  background: rgba(233, 30, 99, 0.15);
+  border-left: 3px solid #E91E63;
+}
+
+.countdown-item.anniversary {
+  background: rgba(156, 39, 176, 0.15);
+  border-left: 3px solid #9C27B0;
+}
+
+.countdown-item.holiday {
+  background: rgba(33, 150, 243, 0.15);
+  border-left: 3px solid #2196F3;
+}
+
+.countdown-icon {
+  font-size: 16px;
+}
+
+.countdown-title {
+  flex: 1;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.countdown-days {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+/* ==========================================
+   Right Panel - Calendar
+   ========================================== */
+
 .right-panel {
   flex: 1;
-  background-color: rgba(0, 0, 0, 0.95);
+  background-color: var(--bg-secondary);
   overflow-y: auto;
   padding: 30px 40px;
 }
@@ -243,6 +631,87 @@ body {
   border-radius: 4px;
 }
 
+/* ==========================================
+   Calendar Controls
+   ========================================== */
+
+.calendar-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.view-toggle {
+  display: flex;
+  gap: 5px;
+}
+
+.view-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.view-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.view-btn.active {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: #fff;
+}
+
+.calendar-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.filter-item:hover {
+  opacity: 1;
+}
+
+.filter-item input {
+  display: none;
+}
+
+.filter-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.filter-item input:not(:checked) + .filter-color {
+  opacity: 0.3;
+}
+
+.filter-name {
+  color: var(--text-secondary);
+}
+
+/* ==========================================
+   Calendar Section
+   ========================================== */
+
 .calendar-section {
   max-width: 800px;
 }
@@ -258,26 +727,31 @@ body {
   gap: 15px;
   margin-bottom: 15px;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .day-number {
   font-size: 36px;
   font-weight: 300;
   opacity: 0.9;
+  color: var(--text-primary);
 }
 
 .day-name {
   font-size: 20px;
   font-weight: 400;
   opacity: 0.8;
+  color: var(--text-secondary);
 }
 
 .day-header.today .day-name {
-  color: #4CAF50;
+  color: var(--accent-color);
 }
 
-/* Events */
+/* ==========================================
+   Events
+   ========================================== */
+
 .event-list {
   display: flex;
   flex-direction: column;
@@ -291,6 +765,27 @@ body {
   padding: 8px 0;
 }
 
+.event-type-birthday {
+  background: rgba(233, 30, 99, 0.05);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 0 -12px;
+}
+
+.event-type-anniversary {
+  background: rgba(156, 39, 176, 0.05);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 0 -12px;
+}
+
+.event-type-holiday {
+  background: rgba(33, 150, 243, 0.05);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 0 -12px;
+}
+
 .event-color {
   width: 4px;
   min-height: 24px;
@@ -300,11 +795,23 @@ body {
 }
 
 .event-time {
-  width: 80px;
+  width: 100px;
   flex-shrink: 0;
   font-size: 15px;
   font-weight: 400;
   opacity: 0.8;
+  color: var(--text-secondary);
+}
+
+.event-duration {
+  display: block;
+  font-size: 11px;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
+.event-details {
+  flex: 1;
 }
 
 .event-title {
@@ -312,15 +819,115 @@ body {
   font-size: 16px;
   font-weight: 400;
   line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.event-icon {
+  margin-right: 6px;
 }
 
 .event-location {
   font-size: 13px;
   opacity: 0.6;
   margin-top: 2px;
+  color: var(--text-muted);
 }
 
-/* Loading State */
+/* ==========================================
+   Week View
+   ========================================== */
+
+.week-view {
+  display: none;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+
+.week-day {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 200px;
+}
+
+.week-day.today {
+  border: 2px solid var(--accent-color);
+}
+
+.week-day-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.week-day-name {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.6;
+}
+
+.week-day-number {
+  font-size: 24px;
+  font-weight: 300;
+}
+
+.week-day.today .week-day-number {
+  color: var(--accent-color);
+}
+
+.week-day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.week-event {
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  border-left: 3px solid var(--accent-color);
+  font-size: 11px;
+}
+
+.week-event.birthday {
+  background: rgba(233, 30, 99, 0.1);
+}
+
+.week-event.anniversary {
+  background: rgba(156, 39, 176, 0.1);
+}
+
+.week-event.holiday {
+  background: rgba(33, 150, 243, 0.1);
+}
+
+.week-event-time {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-right: 4px;
+}
+
+.week-event-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.week-more {
+  font-size: 11px;
+  opacity: 0.6;
+  text-align: center;
+  padding: 4px;
+}
+
+/* ==========================================
+   Loading & Error States
+   ========================================== */
+
 .loading {
   display: flex;
   align-items: center;
@@ -328,31 +935,43 @@ body {
   height: 200px;
   font-size: 18px;
   opacity: 0.6;
+  color: var(--text-muted);
 }
 
-/* Error State */
 .error {
   background: rgba(244, 67, 54, 0.1);
   border: 1px solid rgba(244, 67, 54, 0.3);
   border-radius: 8px;
   padding: 20px;
   margin: 20px 0;
-  color: #ef5350;
+  color: var(--error-color);
 }
 
-/* No Events */
 .no-events {
   opacity: 0.5;
   font-style: italic;
   padding: 10px 0;
+  color: var(--text-muted);
 }
 
-/* Weather Icon Classes */
+/* ==========================================
+   Weather Icon Classes
+   ========================================== */
+
 .wi {
   display: inline-block;
 }
 
-/* Responsive adjustments */
+/* ==========================================
+   Responsive Adjustments
+   ========================================== */
+
+@media (max-width: 1400px) {
+  .week-view {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 @media (max-width: 1200px) {
   .left-panel {
     width: 350px;
@@ -369,6 +988,10 @@ body {
 
   .temp-value {
     font-size: 56px;
+  }
+
+  .weather-details {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -388,13 +1011,82 @@ body {
     height: auto;
     flex: 1;
   }
+
+  .week-view {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .calendar-controls {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
 }
 
-/* Hide cursor for kiosk mode */
+@media (max-width: 600px) {
+  .weather-section {
+    padding: 20px;
+  }
+
+  .right-panel {
+    padding: 20px;
+  }
+
+  .time {
+    font-size: 56px;
+  }
+
+  .seconds {
+    font-size: 20px;
+  }
+
+  .temp-value {
+    font-size: 48px;
+  }
+
+  .week-view {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ==========================================
+   Kiosk Mode
+   ========================================== */
+
 .kiosk-mode {
   cursor: none;
 }
 
 .kiosk-mode * {
   cursor: none;
+}
+
+.kiosk-mode .calendar-controls {
+  display: none;
+}
+
+.kiosk-mode .connection-status {
+  display: none;
+}
+
+/* ==========================================
+   Print Styles
+   ========================================== */
+
+@media print {
+  .connection-status,
+  .weather-alerts,
+  .calendar-controls {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  .left-panel,
+  .right-panel {
+    background: #fff;
+  }
 }
