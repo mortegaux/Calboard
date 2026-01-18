@@ -20,13 +20,41 @@ let config;
 const CONFIG_PATH = './config.json';
 const BCRYPT_ROUNDS = 12;
 
+// Default configuration for first launch
+const DEFAULT_CONFIG = {
+  weather: {
+    apiKey: '',
+    latitude: 0,
+    longitude: 0,
+    units: 'imperial'
+  },
+  calendars: [],
+  display: {
+    daysToShow: 7,
+    refreshIntervalMinutes: 5,
+    backgroundImage: null,
+    dateFormat: 'en-US',
+    timeFormat: '12h'
+  },
+  server: {
+    port: 3000
+  },
+  admin: {
+    password: null
+  },
+  setupComplete: false
+};
+
 function loadConfig() {
   try {
     config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
     return true;
   } catch (err) {
-    console.error('Error loading config.json:', err.message);
-    return false;
+    // Create default config if it doesn't exist
+    console.log('No config.json found, creating default configuration...');
+    config = { ...DEFAULT_CONFIG };
+    saveConfig(config);
+    return true;
   }
 }
 
@@ -41,11 +69,20 @@ function saveConfig(newConfig) {
   }
 }
 
-// Initial load
-if (!loadConfig()) {
-  console.error('Please copy config.example.json to config.json and configure it.');
-  process.exit(1);
+function isSetupComplete() {
+  // Check if setup has been completed
+  if (config.setupComplete === true) return true;
+
+  // Legacy check: if weather API key is set, consider setup complete
+  if (config.weather?.apiKey && config.weather.apiKey.length > 10) {
+    return true;
+  }
+
+  return false;
 }
+
+// Initial load
+loadConfig();
 
 const PORT = config.server?.port || 3000;
 
@@ -140,8 +177,165 @@ app.use('/api/', apiLimiter);
 // Serve static files with security headers
 app.use(express.static('public', {
   dotfiles: 'ignore',
-  index: 'index.html'
+  index: false // We'll handle index routing manually
 }));
+
+// ============================================
+// Setup Wizard Routes
+// ============================================
+
+// Redirect to setup wizard if not configured
+app.get('/', (req, res, next) => {
+  if (!isSetupComplete()) {
+    return res.redirect('/setup');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Setup page
+app.get('/setup', (req, res) => {
+  // If already configured, redirect to dashboard
+  if (isSetupComplete()) {
+    return res.redirect('/');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'setup.html'));
+});
+
+// Check setup status
+app.get('/api/setup/status', (req, res) => {
+  res.json({
+    setupComplete: isSetupComplete(),
+    hasApiKey: !!(config.weather?.apiKey),
+    hasCalendars: config.calendars?.length > 0
+  });
+});
+
+// Test weather API during setup (no auth required)
+app.post('/api/setup/test-weather', async (req, res) => {
+  try {
+    const { apiKey, latitude, longitude } = req.body;
+
+    if (!apiKey || typeof apiKey !== 'string') {
+      return res.status(400).json({ success: false, error: 'API key is required' });
+    }
+
+    if (!validateLatitude(latitude)) {
+      return res.status(400).json({ success: false, error: 'Invalid latitude' });
+    }
+
+    if (!validateLongitude(longitude)) {
+      return res.status(400).json({ success: false, error: 'Invalid longitude' });
+    }
+
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}`;
+    const response = await fetch(url, { timeout: 10000 });
+    const data = await response.json();
+
+    if (data.cod && data.cod !== 200) {
+      throw new Error(data.message || 'Weather API error');
+    }
+
+    res.json({
+      success: true,
+      location: data.name,
+      country: data.sys?.country
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Test calendar URL during setup (no auth required)
+app.post('/api/setup/test-calendar', async (req, res) => {
+  try {
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({ success: false, error: 'URL is required' });
+    }
+
+    if (!validateUrl(url)) {
+      return res.status(400).json({ success: false, error: 'Invalid URL format' });
+    }
+
+    const response = await fetch(url, { timeout: 10000 });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const icsData = await response.text();
+    const jcalData = ICAL.parse(icsData);
+    const comp = new ICAL.Component(jcalData);
+    const vevents = comp.getAllSubcomponents('vevent');
+
+    res.json({
+      success: true,
+      eventCount: vevents.length
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Complete setup
+app.post('/api/setup/complete', async (req, res) => {
+  try {
+    // Don't allow re-setup if already configured (unless via admin)
+    if (isSetupComplete()) {
+      return res.status(403).json({ success: false, error: 'Setup already complete. Use /admin to modify settings.' });
+    }
+
+    const newConfig = req.body;
+
+    // Validate required fields
+    if (!newConfig.weather?.apiKey) {
+      return res.status(400).json({ success: false, error: 'Weather API key is required' });
+    }
+
+    if (!validateLatitude(newConfig.weather?.latitude)) {
+      return res.status(400).json({ success: false, error: 'Invalid latitude' });
+    }
+
+    if (!validateLongitude(newConfig.weather?.longitude)) {
+      return res.status(400).json({ success: false, error: 'Invalid longitude' });
+    }
+
+    // Validate calendars
+    if (newConfig.calendars) {
+      for (const cal of newConfig.calendars) {
+        if (cal.url && !validateUrl(cal.url)) {
+          return res.status(400).json({ success: false, error: `Invalid URL for calendar: ${cal.name}` });
+        }
+      }
+    }
+
+    // Hash password if provided
+    if (newConfig.admin?.password) {
+      if (newConfig.admin.password.length < 8) {
+        return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
+      }
+      newConfig.admin.passwordHash = await hashPassword(newConfig.admin.password);
+      delete newConfig.admin.password;
+    }
+
+    // Preserve session secret if it exists
+    if (config.server?.sessionSecret) {
+      newConfig.server.sessionSecret = config.server.sessionSecret;
+    }
+
+    // Mark setup as complete
+    newConfig.setupComplete = true;
+
+    if (saveConfig(newConfig)) {
+      res.json({ success: true, message: 'Setup complete!' });
+    } else {
+      res.status(500).json({ success: false, error: 'Failed to save configuration' });
+    }
+  } catch (err) {
+    console.error('Setup error:', err);
+    res.status(500).json({ success: false, error: 'Setup failed' });
+  }
+});
 
 // ============================================
 // Input Validation Helpers
@@ -778,6 +972,12 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Calboard server running at http://localhost:${PORT}`);
   console.log(`Access from other devices: http://<your-pi-ip>:${PORT}`);
   console.log('');
+
+  if (!isSetupComplete()) {
+    console.log('*** FIRST RUN - Setup wizard available at /setup ***');
+    console.log('');
+  }
+
   console.log('Security features enabled:');
   console.log('  - Helmet security headers');
   console.log('  - Rate limiting on API endpoints');

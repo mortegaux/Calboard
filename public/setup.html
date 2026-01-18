@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calboard - Setup Wizard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="setup.css">
+</head>
+<body>
+  <div class="wizard-container">
+    <!-- Progress Bar -->
+    <div class="progress-bar">
+      <div class="progress-steps">
+        <div class="step active" data-step="1">
+          <div class="step-number">1</div>
+          <div class="step-label">Welcome</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" data-step="2">
+          <div class="step-number">2</div>
+          <div class="step-label">Weather</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" data-step="3">
+          <div class="step-number">3</div>
+          <div class="step-label">Location</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" data-step="4">
+          <div class="step-number">4</div>
+          <div class="step-label">Calendars</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" data-step="5">
+          <div class="step-number">5</div>
+          <div class="step-label">Display</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" data-step="6">
+          <div class="step-number">6</div>
+          <div class="step-label">Security</div>
+        </div>
+      </div>
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
+    <!-- Wizard Steps -->
+    <div class="wizard-content">
+      <!-- Step 1: Welcome -->
+      <div class="wizard-step active" data-step="1">
+        <div class="step-icon">&#128197;</div>
+        <h1>Welcome to Calboard</h1>
+        <p class="step-description">
+          Your personal calendar and weather dashboard for Raspberry Pi.
+          <br><br>
+          This wizard will help you configure your dashboard in just a few steps.
+        </p>
+        <div class="features-preview">
+          <div class="feature">
+            <span class="feature-icon">&#9728;</span>
+            <span>Weather & Forecast</span>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">&#128197;</span>
+            <span>Multiple Calendars</span>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">&#128268;</span>
+            <span>Auto Refresh</span>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">&#128274;</span>
+            <span>Secure Admin</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Weather API -->
+      <div class="wizard-step" data-step="2">
+        <div class="step-icon">&#9728;</div>
+        <h1>Weather API Setup</h1>
+        <p class="step-description">
+          Calboard uses OpenWeatherMap for weather data. You'll need a free API key.
+        </p>
+        <div class="form-section">
+          <div class="instructions">
+            <h3>How to get your API key:</h3>
+            <ol>
+              <li>Go to <a href="https://openweathermap.org/api" target="_blank">openweathermap.org/api</a></li>
+              <li>Sign up for a free account</li>
+              <li>Navigate to "API keys" in your account</li>
+              <li>Copy your API key and paste it below</li>
+            </ol>
+            <p class="note">Note: New API keys may take a few hours to activate.</p>
+          </div>
+          <div class="form-group">
+            <label for="api-key">OpenWeatherMap API Key</label>
+            <input type="text" id="api-key" placeholder="Enter your API key">
+            <span class="validation-message" id="api-key-validation"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Location -->
+      <div class="wizard-step" data-step="3">
+        <div class="step-icon">&#128205;</div>
+        <h1>Your Location</h1>
+        <p class="step-description">
+          Enter your location coordinates for accurate weather data.
+        </p>
+        <div class="form-section">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="latitude">Latitude</label>
+              <input type="number" id="latitude" step="0.0001" placeholder="e.g., 30.2672">
+            </div>
+            <div class="form-group">
+              <label for="longitude">Longitude</label>
+              <input type="number" id="longitude" step="0.0001" placeholder="e.g., -97.7431">
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary" id="detect-location">
+            <span class="btn-icon">&#128205;</span> Detect My Location
+          </button>
+          <span class="validation-message" id="location-validation"></span>
+          <div class="form-group" style="margin-top: 20px;">
+            <label for="units">Temperature Units</label>
+            <select id="units">
+              <option value="imperial">Fahrenheit (°F)</option>
+              <option value="metric">Celsius (°C)</option>
+            </select>
+          </div>
+          <div class="test-section">
+            <button type="button" class="btn btn-secondary" id="test-weather">Test Weather Connection</button>
+            <span class="test-result" id="weather-test-result"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Calendars -->
+      <div class="wizard-step" data-step="4">
+        <div class="step-icon">&#128197;</div>
+        <h1>Add Calendars</h1>
+        <p class="step-description">
+          Add your calendar feeds (ICS format). You can add more later from the admin panel.
+        </p>
+        <div class="form-section">
+          <div id="calendars-container">
+            <!-- Calendar entries will be added here -->
+          </div>
+          <button type="button" class="btn btn-secondary" id="add-calendar">
+            <span class="btn-icon">+</span> Add Calendar
+          </button>
+          <div class="calendar-help">
+            <h4>Where to find calendar URLs:</h4>
+            <details>
+              <summary>Google Calendar</summary>
+              <ol>
+                <li>Open Google Calendar settings</li>
+                <li>Click on the calendar you want</li>
+                <li>Scroll to "Integrate calendar"</li>
+                <li>Copy "Secret address in iCal format"</li>
+              </ol>
+            </details>
+            <details>
+              <summary>Outlook / Office 365</summary>
+              <ol>
+                <li>Go to Outlook Calendar on web</li>
+                <li>Settings → View all Outlook settings</li>
+                <li>Calendar → Shared calendars</li>
+                <li>Publish a calendar and copy ICS link</li>
+              </ol>
+            </details>
+            <details>
+              <summary>Apple iCloud</summary>
+              <ol>
+                <li>Open Calendar app on Mac</li>
+                <li>Right-click calendar → Share Calendar</li>
+                <li>Check "Public Calendar"</li>
+                <li>Copy the URL</li>
+              </ol>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5: Display Settings -->
+      <div class="wizard-step" data-step="5">
+        <div class="step-icon">&#128187;</div>
+        <h1>Display Preferences</h1>
+        <p class="step-description">
+          Customize how your dashboard looks.
+        </p>
+        <div class="form-section">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="days-to-show">Days to Show</label>
+              <select id="days-to-show">
+                <option value="3">3 days</option>
+                <option value="5">5 days</option>
+                <option value="7" selected>7 days (1 week)</option>
+                <option value="14">14 days (2 weeks)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="refresh-interval">Refresh Interval</label>
+              <select id="refresh-interval">
+                <option value="1">Every 1 minute</option>
+                <option value="5" selected>Every 5 minutes</option>
+                <option value="10">Every 10 minutes</option>
+                <option value="15">Every 15 minutes</option>
+                <option value="30">Every 30 minutes</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="time-format">Time Format</label>
+              <select id="time-format">
+                <option value="12h">12 Hour (AM/PM)</option>
+                <option value="24h">24 Hour</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="date-format">Date Format</label>
+              <select id="date-format">
+                <option value="en-US">English (US)</option>
+                <option value="en-GB">English (UK)</option>
+                <option value="de-DE">German</option>
+                <option value="fr-FR">French</option>
+                <option value="es-ES">Spanish</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 6: Security -->
+      <div class="wizard-step" data-step="6">
+        <div class="step-icon">&#128274;</div>
+        <h1>Secure Your Dashboard</h1>
+        <p class="step-description">
+          Set an admin password to protect your settings. This is highly recommended.
+        </p>
+        <div class="form-section">
+          <div class="form-group">
+            <label for="admin-password">Admin Password</label>
+            <input type="password" id="admin-password" placeholder="Minimum 8 characters">
+            <span class="help-text">Used to access the settings panel at /admin</span>
+          </div>
+          <div class="form-group">
+            <label for="confirm-password">Confirm Password</label>
+            <input type="password" id="confirm-password" placeholder="Confirm your password">
+            <span class="validation-message" id="password-validation"></span>
+          </div>
+          <div class="security-note">
+            <strong>Security Features Enabled:</strong>
+            <ul>
+              <li>Bcrypt password hashing</li>
+              <li>Rate-limited login attempts</li>
+              <li>Secure session cookies</li>
+              <li>Input validation</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Completion Screen -->
+      <div class="wizard-step" data-step="complete">
+        <div class="step-icon success">&#10003;</div>
+        <h1>Setup Complete!</h1>
+        <p class="step-description">
+          Your Calboard dashboard is ready to use.
+        </p>
+        <div class="completion-summary">
+          <div class="summary-item">
+            <span class="summary-icon">&#9728;</span>
+            <span>Weather configured for <strong id="summary-location">your location</strong></span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-icon">&#128197;</span>
+            <span><strong id="summary-calendars">0</strong> calendar(s) added</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-icon">&#128274;</span>
+            <span id="summary-security">Admin password set</span>
+          </div>
+        </div>
+        <div class="next-steps">
+          <p>You can always change settings later at <code>/admin</code></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="wizard-navigation">
+      <button type="button" class="btn btn-secondary" id="prev-btn" style="visibility: hidden;">
+        Back
+      </button>
+      <button type="button" class="btn btn-primary" id="next-btn">
+        Get Started
+      </button>
+    </div>
+  </div>
+
+  <!-- Calendar Template -->
+  <template id="calendar-template">
+    <div class="calendar-entry">
+      <div class="calendar-entry-header">
+        <input type="text" class="calendar-name" placeholder="Calendar name (e.g., Work)">
+        <input type="color" class="calendar-color" value="#4CAF50">
+        <button type="button" class="btn-remove" title="Remove">×</button>
+      </div>
+      <div class="calendar-entry-body">
+        <input type="url" class="calendar-url" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics">
+        <button type="button" class="btn btn-small btn-test-calendar">Test</button>
+        <span class="calendar-test-result"></span>
+      </div>
+    </div>
+  </template>
+
+  <script src="setup.js"></script>
+</body>
+</html>

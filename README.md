@@ -15,6 +15,7 @@ A beautiful calendar and weather dashboard designed for Raspberry Pi displays. S
 - **Kiosk Mode** - Double-click to enter fullscreen mode with hidden cursor
 - **Customizable** - Background images, time format, and more
 - **Web Admin Interface** - Configure everything remotely via browser at `/admin`
+- **Setup Wizard** - Guided first-time setup experience
 
 ## Requirements
 
@@ -37,15 +38,34 @@ cd calboard
 npm install
 ```
 
-### 3. Configure the dashboard
+### 3. Start the server
 
-Copy the example configuration file:
+```bash
+npm start
+```
+
+### 4. Complete the Setup Wizard
+
+On first launch, open `http://localhost:3000` and you'll be automatically redirected to the **Setup Wizard**. The wizard guides you through:
+
+1. **Welcome** - Overview of Calboard features
+2. **Weather API** - Enter your OpenWeatherMap API key
+3. **Location** - Set your coordinates (with auto-detect option)
+4. **Calendars** - Add your ICS calendar feeds
+5. **Display** - Configure refresh intervals and time formats
+6. **Security** - Set an admin password (recommended)
+
+Once complete, you'll be redirected to your dashboard!
+
+### Alternative: Manual Configuration
+
+You can also manually create `config.json` by copying the example:
 
 ```bash
 cp config.example.json config.json
 ```
 
-Edit `config.json` with your settings:
+Then edit with your settings:
 
 ```json
 {
@@ -78,17 +98,7 @@ Edit `config.json` with your settings:
 }
 ```
 
-**Tip:** You can also configure everything via the web interface at `/admin` after starting the server.
-
-### 4. Start the server
-
-```bash
-npm start
-```
-
-### 5. Open in browser
-
-Navigate to `http://localhost:3000` (or `http://<your-pi-ip>:3000` from another device)
+After configuring, restart the server and navigate to `http://localhost:3000`
 
 ## Configuration Options
 
