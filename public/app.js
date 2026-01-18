@@ -55,12 +55,20 @@ class Calboard {
       this.loadCalendar()
     ]);
 
+    // Load widgets
+    await this.loadWidgets();
+
     // Set up auto-refresh
     const refreshMinutes = this.config?.display?.refreshIntervalMinutes || 5;
     this.refreshInterval = setInterval(() => {
       this.loadWeather();
       this.loadCalendar();
+      this.loadWidgets();
     }, refreshMinutes * 60 * 1000);
+
+    // Check screensaver mode periodically
+    this.checkScreensaver();
+    setInterval(() => this.checkScreensaver(), 60000);
 
     // Set background image/slideshow
     this.setupBackground();
@@ -876,6 +884,496 @@ class Calboard {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  // ==========================================
+  // Widget System
+  // ==========================================
+
+  async loadWidgets() {
+    try {
+      const response = await fetch('/api/widgets');
+      const widgets = await response.json();
+
+      // Load enabled widgets
+      if (widgets.quotes?.enabled) this.loadQuote();
+      if (widgets.moonPhase?.enabled) this.loadMoonPhase();
+      if (widgets.news?.enabled) this.loadNews();
+      if (widgets.wordOfDay?.enabled) this.loadWordOfDay();
+      if (widgets.jokeOfDay?.enabled) this.loadJoke();
+      if (widgets.onThisDay?.enabled) this.loadOnThisDay();
+      if (widgets.stocks?.enabled) this.loadStocks();
+      if (widgets.crypto?.enabled) this.loadCrypto();
+      if (widgets.sports?.enabled) this.loadSports();
+      if (widgets.tasks?.enabled) this.loadTasks();
+      if (widgets.groceryList?.enabled) this.loadGrocery();
+      if (widgets.messageBoard?.enabled) this.loadMessages();
+      if (widgets.homeAssistant?.enabled) this.loadHomeAssistant();
+      if (widgets.systemStats?.enabled) this.loadSystemStats();
+    } catch (err) {
+      console.error('Failed to load widgets:', err);
+    }
+  }
+
+  async loadQuote() {
+    try {
+      const response = await fetch('/api/widgets/quote');
+      const data = await response.json();
+
+      if (data.enabled && data.quote) {
+        const widget = document.getElementById('quote-widget');
+        document.getElementById('quote-text').textContent = data.quote;
+        document.getElementById('quote-author').textContent = data.author;
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Quote widget error:', err);
+    }
+  }
+
+  async loadMoonPhase() {
+    try {
+      const response = await fetch('/api/widgets/moon');
+      const data = await response.json();
+
+      if (data.enabled) {
+        const widget = document.getElementById('moon-widget');
+        document.getElementById('moon-icon').textContent = data.icon;
+        document.getElementById('moon-phase').textContent = data.phase;
+        widget.style.display = 'flex';
+      }
+    } catch (err) {
+      console.error('Moon widget error:', err);
+    }
+  }
+
+  async loadNews() {
+    try {
+      const response = await fetch('/api/widgets/news');
+      const data = await response.json();
+
+      if (data.enabled && data.items?.length) {
+        const widget = document.getElementById('news-widget');
+        const container = document.getElementById('news-items');
+
+        container.innerHTML = data.items.map(item => `
+          <div class="news-item" onclick="window.open('${item.link}', '_blank')">
+            <div class="news-item-title">${this.escapeHtml(item.title)}</div>
+            <div class="news-item-source">${this.escapeHtml(item.source)}</div>
+          </div>
+        `).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('News widget error:', err);
+    }
+  }
+
+  async loadWordOfDay() {
+    try {
+      const response = await fetch('/api/widgets/word');
+      const data = await response.json();
+
+      if (data.enabled) {
+        const widget = document.getElementById('word-widget');
+        document.getElementById('word-word').textContent = data.word;
+        document.getElementById('word-pos').textContent = data.partOfSpeech;
+        document.getElementById('word-definition').textContent = data.definition;
+        document.getElementById('word-example').textContent = data.example;
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Word widget error:', err);
+    }
+  }
+
+  async loadJoke() {
+    try {
+      const response = await fetch('/api/widgets/joke');
+      const data = await response.json();
+
+      if (data.enabled) {
+        const widget = document.getElementById('joke-widget');
+        document.getElementById('joke-setup').textContent = data.setup;
+        document.getElementById('joke-punchline').textContent = data.punchline;
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Joke widget error:', err);
+    }
+  }
+
+  async loadOnThisDay() {
+    try {
+      const response = await fetch('/api/widgets/onthisday');
+      const data = await response.json();
+
+      if (data.enabled && data.events?.length) {
+        const widget = document.getElementById('history-widget');
+        const container = document.getElementById('history-events');
+
+        container.innerHTML = data.events.map(event => `
+          <div class="history-event">
+            <span class="history-year">${event.year}</span>
+            <span class="history-text">${this.escapeHtml(event.text)}</span>
+          </div>
+        `).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('History widget error:', err);
+    }
+  }
+
+  async loadStocks() {
+    try {
+      const response = await fetch('/api/widgets/stocks');
+      const data = await response.json();
+
+      if (data.enabled && data.stocks?.length) {
+        const widget = document.getElementById('stocks-widget');
+        const container = document.getElementById('stocks-list');
+
+        container.innerHTML = data.stocks.map(stock => {
+          const changeClass = parseFloat(stock.change) >= 0 ? 'positive' : 'negative';
+          const changeSign = parseFloat(stock.change) >= 0 ? '+' : '';
+          return `
+            <div class="stock-item">
+              <span class="stock-symbol">${stock.symbol}</span>
+              <span class="stock-price">$${stock.price}</span>
+              <span class="stock-change ${changeClass}">${changeSign}${stock.change}</span>
+            </div>
+          `;
+        }).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Stocks widget error:', err);
+    }
+  }
+
+  async loadCrypto() {
+    try {
+      const response = await fetch('/api/widgets/crypto');
+      const data = await response.json();
+
+      if (data.enabled && data.coins?.length) {
+        const widget = document.getElementById('crypto-widget');
+        const container = document.getElementById('crypto-list');
+
+        container.innerHTML = data.coins.map(coin => {
+          const change = parseFloat(coin.change24h);
+          const changeClass = change >= 0 ? 'positive' : 'negative';
+          const changeSign = change >= 0 ? '+' : '';
+          return `
+            <div class="crypto-item">
+              <span class="crypto-name">${coin.name}</span>
+              <span class="crypto-price">$${coin.price}</span>
+              <span class="crypto-change ${changeClass}">${changeSign}${change.toFixed(1)}%</span>
+            </div>
+          `;
+        }).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Crypto widget error:', err);
+    }
+  }
+
+  async loadSports() {
+    try {
+      const response = await fetch('/api/widgets/sports');
+      const data = await response.json();
+
+      if (data.enabled && data.leagues?.length) {
+        const widget = document.getElementById('sports-widget');
+        const container = document.getElementById('sports-scores');
+
+        container.innerHTML = data.leagues.map(league => {
+          if (league.error || !league.events?.length) return '';
+          return `
+            <div class="sports-league">
+              <div class="sports-league-name">${league.league}</div>
+              ${league.events.map(game => `
+                <div class="sports-game">
+                  <div class="sports-teams">
+                    <span>${game.awayTeam}</span>
+                    <span>${game.homeTeam}</span>
+                  </div>
+                  <div class="sports-score">
+                    <span>${game.awayScore || '-'}</span>
+                    <span>${game.homeScore || '-'}</span>
+                  </div>
+                  <div class="sports-status">${game.status}</div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Sports widget error:', err);
+    }
+  }
+
+  async loadTasks() {
+    try {
+      const response = await fetch('/api/widgets/tasks');
+      const data = await response.json();
+
+      if (data.enabled && data.lists?.length) {
+        const widget = document.getElementById('tasks-widget');
+        const container = document.getElementById('tasks-list');
+
+        const allTasks = data.lists.flatMap(list => list.items || []);
+
+        container.innerHTML = allTasks.slice(0, 10).map(task => `
+          <div class="task-item ${task.completed ? 'completed' : ''}">
+            <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}
+              onchange="calboard.toggleTask('${task.id}', this.checked)">
+            <span class="task-text">${this.escapeHtml(task.text)}</span>
+          </div>
+        `).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Tasks widget error:', err);
+    }
+  }
+
+  async toggleTask(id, completed) {
+    try {
+      await fetch(`/api/widgets/tasks/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed })
+      });
+    } catch (err) {
+      console.error('Toggle task error:', err);
+    }
+  }
+
+  async loadGrocery() {
+    try {
+      const response = await fetch('/api/widgets/grocery');
+      const data = await response.json();
+
+      if (data.enabled && data.items?.length) {
+        const widget = document.getElementById('grocery-widget');
+        const container = document.getElementById('grocery-items');
+
+        container.innerHTML = data.items.map(item => `
+          <div class="grocery-item ${item.checked ? 'checked' : ''}">
+            <input type="checkbox" class="grocery-checkbox" ${item.checked ? 'checked' : ''}
+              onchange="calboard.toggleGrocery('${item.id}', this.checked)">
+            <span class="grocery-name">${this.escapeHtml(item.name)}</span>
+            <span class="grocery-qty">${item.quantity > 1 ? 'x' + item.quantity : ''}</span>
+          </div>
+        `).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Grocery widget error:', err);
+    }
+  }
+
+  async toggleGrocery(id, checked) {
+    try {
+      await fetch(`/api/widgets/grocery/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checked })
+      });
+    } catch (err) {
+      console.error('Toggle grocery error:', err);
+    }
+  }
+
+  async loadMessages() {
+    try {
+      const response = await fetch('/api/widgets/messages');
+      const data = await response.json();
+
+      if (data.enabled && data.messages?.length) {
+        const widget = document.getElementById('messages-widget');
+        const container = document.getElementById('messages-list');
+
+        container.innerHTML = data.messages.slice(0, 5).map(msg => {
+          const date = new Date(msg.timestamp);
+          const timeAgo = this.getTimeAgo(date);
+          return `
+            <div class="message-item">
+              <div class="message-text">${this.escapeHtml(msg.text)}</div>
+              <div class="message-meta">
+                <span>${this.escapeHtml(msg.author)}</span>
+                <span>${timeAgo}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Messages widget error:', err);
+    }
+  }
+
+  getTimeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+    if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+    return Math.floor(seconds / 86400) + 'd ago';
+  }
+
+  async loadHomeAssistant() {
+    try {
+      const response = await fetch('/api/widgets/homeassistant');
+      const data = await response.json();
+
+      if (data.enabled && data.entities?.length) {
+        const widget = document.getElementById('ha-widget');
+        const container = document.getElementById('ha-entities');
+
+        container.innerHTML = data.entities.map(entity => {
+          const isOn = entity.state === 'on';
+          const icon = this.getHAIcon(entity.entityId, isOn);
+          return `
+            <div class="ha-entity ${isOn ? 'on' : ''}" onclick="calboard.toggleHA('${entity.entityId}')">
+              <span class="ha-entity-icon">${icon}</span>
+              <span class="ha-entity-name">${this.escapeHtml(entity.friendlyName)}</span>
+              <span class="ha-entity-state">${entity.state}${entity.unitOfMeasurement || ''}</span>
+            </div>
+          `;
+        }).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Home Assistant widget error:', err);
+    }
+  }
+
+  getHAIcon(entityId, isOn) {
+    if (entityId.startsWith('light.')) return isOn ? '💡' : '🔌';
+    if (entityId.startsWith('switch.')) return isOn ? '🔵' : '⚫';
+    if (entityId.startsWith('sensor.')) return '📊';
+    if (entityId.startsWith('climate.')) return '🌡️';
+    if (entityId.startsWith('lock.')) return isOn ? '🔒' : '🔓';
+    if (entityId.startsWith('cover.')) return '🪟';
+    return '⚡';
+  }
+
+  async toggleHA(entityId) {
+    try {
+      await fetch('/api/widgets/homeassistant/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entityId })
+      });
+      // Reload HA widget after toggle
+      setTimeout(() => this.loadHomeAssistant(), 500);
+    } catch (err) {
+      console.error('HA toggle error:', err);
+    }
+  }
+
+  async loadSystemStats() {
+    try {
+      const response = await fetch('/api/widgets/system');
+      const data = await response.json();
+
+      if (data.enabled && data.stats) {
+        const widget = document.getElementById('system-widget');
+        const container = document.getElementById('system-stats');
+        const stats = data.stats;
+
+        let html = '';
+        if (stats.cpuUsage !== null) {
+          html += `
+            <div class="stat-item">
+              <span class="stat-icon">💻</span>
+              <span class="stat-value">${stats.cpuUsage}%</span>
+              <span class="stat-label">CPU</span>
+            </div>
+          `;
+        }
+        if (stats.memoryUsage !== null) {
+          html += `
+            <div class="stat-item">
+              <span class="stat-icon">🧠</span>
+              <span class="stat-value">${stats.memoryUsage}%</span>
+              <span class="stat-label">Memory</span>
+            </div>
+          `;
+        }
+        if (stats.cpuTemp !== null) {
+          html += `
+            <div class="stat-item">
+              <span class="stat-icon">🌡️</span>
+              <span class="stat-value">${stats.cpuTemp}°C</span>
+              <span class="stat-label">Temp</span>
+            </div>
+          `;
+        }
+        if (stats.uptime !== null) {
+          html += `
+            <div class="stat-item">
+              <span class="stat-icon">⏱️</span>
+              <span class="stat-value">${stats.uptime}</span>
+              <span class="stat-label">Uptime</span>
+            </div>
+          `;
+        }
+
+        container.innerHTML = html;
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('System stats widget error:', err);
+    }
+  }
+
+  // ==========================================
+  // Screensaver Mode
+  // ==========================================
+
+  checkScreensaver() {
+    const display = this.config?.display;
+    if (!display?.screensaverEnabled) return;
+
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+
+    const [startHour, startMin] = (display.screensaverStart || '22:00').split(':').map(Number);
+    const [endHour, endMin] = (display.screensaverEnd || '07:00').split(':').map(Number);
+
+    const startTime = startHour * 60 + startMin;
+    const endTime = endHour * 60 + endMin;
+
+    let isScreensaverTime = false;
+    if (startTime > endTime) {
+      // Overnight (e.g., 22:00 to 07:00)
+      isScreensaverTime = currentTime >= startTime || currentTime < endTime;
+    } else {
+      isScreensaverTime = currentTime >= startTime && currentTime < endTime;
+    }
+
+    if (isScreensaverTime) {
+      document.body.classList.add('screensaver-mode');
+      document.body.style.setProperty('--screensaver-dim', (display.screensaverDimLevel || 20) / 100);
+    } else {
+      document.body.classList.remove('screensaver-mode');
+    }
   }
 }
 
