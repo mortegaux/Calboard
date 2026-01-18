@@ -4,6 +4,8 @@ const ICAL = require('ical.js');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const https = require('https');
+const http = require('http');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const session = require('express-session');
@@ -59,7 +61,28 @@ const DEFAULT_CONFIG = {
     screensaverDimLevel: 20
   },
   server: {
-    port: 3000
+    port: 3000,
+    // Remote access security settings
+    security: {
+      ipWhitelist: {
+        enabled: false,
+        allowedIPs: [],  // ['192.168.1.0/24', '10.0.0.5']
+        allowLocalhost: true
+      },
+      rateLimiting: {
+        apiRequestsPerMinute: 60,
+        loginAttemptsPerHour: 10,
+        adminActionsPerMinute: 20
+      },
+      https: {
+        enabled: false,
+        certPath: '',
+        keyPath: '',
+        port: 443
+      },
+      trustedProxies: [],  // For reverse proxy setups
+      allowedOrigins: []   // CORS origins for remote access
+    }
   },
   admin: {
     password: null
@@ -445,6 +468,93 @@ const adminLimiter = rateLimit({
   legacyHeaders: false
 });
 
+// ============================================
+// IP Whitelist Security
+// ============================================
+
+// Convert IP to number for CIDR matching
+function ipToNumber(ip) {
+  if (!ip || typeof ip !== 'string') return 0;
+  // Handle IPv6-mapped IPv4 (::ffff:192.168.1.1)
+  if (ip.includes('::ffff:')) {
+    ip = ip.replace('::ffff:', '');
+  }
+  const parts = ip.split('.');
+  if (parts.length !== 4) return 0;
+  return parts.reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
+}
+
+// Check if IP matches CIDR notation (e.g., 192.168.1.0/24)
+function ipMatchesCIDR(ip, cidr) {
+  if (!cidr.includes('/')) {
+    // Exact IP match
+    return ip === cidr || ip === '::ffff:' + cidr;
+  }
+
+  const [network, bits] = cidr.split('/');
+  const mask = ~((1 << (32 - parseInt(bits))) - 1) >>> 0;
+  const ipNum = ipToNumber(ip);
+  const networkNum = ipToNumber(network);
+
+  return (ipNum & mask) === (networkNum & mask);
+}
+
+// Check if IP is in whitelist
+function isIPAllowed(ip) {
+  const security = config.server?.security?.ipWhitelist;
+
+  // If whitelist is not enabled, allow all
+  if (!security?.enabled) {
+    return true;
+  }
+
+  // Always allow localhost if configured
+  if (security.allowLocalhost) {
+    const localhostIPs = ['127.0.0.1', '::1', '::ffff:127.0.0.1', 'localhost'];
+    if (localhostIPs.includes(ip)) {
+      return true;
+    }
+  }
+
+  // Check against whitelist
+  const allowedIPs = security.allowedIPs || [];
+  return allowedIPs.some(allowed => ipMatchesCIDR(ip, allowed));
+}
+
+// Get real client IP (considering proxies)
+function getClientIP(req) {
+  const trustedProxies = config.server?.security?.trustedProxies || [];
+
+  // If behind trusted proxy, check X-Forwarded-For
+  if (trustedProxies.length > 0) {
+    const forwardedFor = req.headers['x-forwarded-for'];
+    if (forwardedFor) {
+      // Get the first IP in the chain
+      const ips = forwardedFor.split(',').map(ip => ip.trim());
+      return ips[0];
+    }
+  }
+
+  return req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress;
+}
+
+// IP whitelist middleware for admin routes
+function ipWhitelistMiddleware(req, res, next) {
+  const clientIP = getClientIP(req);
+
+  if (!isIPAllowed(clientIP)) {
+    console.log(`Blocked access from IP: ${clientIP}`);
+    return res.status(403).json({
+      error: 'Access denied',
+      message: 'Your IP address is not authorized to access the admin panel'
+    });
+  }
+
+  // Store IP in request for logging
+  req.clientIP = clientIP;
+  next();
+}
+
 // Generate session secret if not exists
 function getSessionSecret() {
   if (config.server?.sessionSecret) {
@@ -745,7 +855,7 @@ app.get('/api/admin/auth-required', (req, res) => {
 });
 
 // Login endpoint
-app.post('/api/admin/login', loginLimiter, async (req, res) => {
+app.post('/api/admin/login', ipWhitelistMiddleware, loginLimiter, async (req, res) => {
   try {
     const { password } = req.body;
 
@@ -1171,7 +1281,7 @@ app.get('/sw.js', (req, res) => {
 });
 
 // Generate QR code for admin access
-app.get('/api/admin/qrcode', adminAuth, (req, res) => {
+app.get('/api/admin/qrcode', ipWhitelistMiddleware, adminAuth, (req, res) => {
   const host = req.get('host');
   const protocol = req.secure ? 'https' : 'http';
   const adminUrl = `${protocol}://${host}/admin`;
@@ -3340,8 +3450,141 @@ app.get('/api/widgets', (req, res) => {
 // Admin API Endpoints (Protected)
 // ============================================
 
+// Security Status API (Public - for checking access before login)
+app.get('/api/security/status', (req, res) => {
+  const clientIP = getClientIP(req);
+  const ipWhitelist = config.server?.security?.ipWhitelist;
+
+  res.json({
+    clientIP: clientIP,
+    ipWhitelistEnabled: ipWhitelist?.enabled || false,
+    isAllowed: isIPAllowed(clientIP),
+    httpsEnabled: config.server?.security?.https?.enabled || false
+  });
+});
+
+// Get security settings (admin only)
+app.get('/api/admin/security', ipWhitelistMiddleware, adminLimiter, adminAuth, (req, res) => {
+  const security = config.server?.security || {};
+  res.json({
+    ipWhitelist: {
+      enabled: security.ipWhitelist?.enabled || false,
+      allowedIPs: security.ipWhitelist?.allowedIPs || [],
+      allowLocalhost: security.ipWhitelist?.allowLocalhost !== false
+    },
+    rateLimiting: {
+      apiRequestsPerMinute: security.rateLimiting?.apiRequestsPerMinute || 60,
+      loginAttemptsPerHour: security.rateLimiting?.loginAttemptsPerHour || 10,
+      adminActionsPerMinute: security.rateLimiting?.adminActionsPerMinute || 20
+    },
+    https: {
+      enabled: security.https?.enabled || false,
+      certPath: security.https?.certPath || '',
+      keyPath: security.https?.keyPath || '',
+      port: security.https?.port || 443
+    },
+    trustedProxies: security.trustedProxies || [],
+    allowedOrigins: security.allowedOrigins || []
+  });
+});
+
+// Update security settings (admin only)
+app.put('/api/admin/security', ipWhitelistMiddleware, adminLimiter, adminAuth, (req, res) => {
+  try {
+    const { ipWhitelist, rateLimiting, https, trustedProxies, allowedOrigins } = req.body;
+
+    // Validate IP whitelist
+    if (ipWhitelist) {
+      if (ipWhitelist.allowedIPs && !Array.isArray(ipWhitelist.allowedIPs)) {
+        return res.status(400).json({ error: 'allowedIPs must be an array' });
+      }
+      // Validate IP format for each entry
+      if (ipWhitelist.allowedIPs) {
+        for (const ip of ipWhitelist.allowedIPs) {
+          if (typeof ip !== 'string' || !/^[\d./]+$/.test(ip)) {
+            return res.status(400).json({ error: `Invalid IP format: ${ip}` });
+          }
+        }
+      }
+    }
+
+    // Validate rate limiting
+    if (rateLimiting) {
+      const { apiRequestsPerMinute, loginAttemptsPerHour, adminActionsPerMinute } = rateLimiting;
+      if (apiRequestsPerMinute !== undefined && (apiRequestsPerMinute < 1 || apiRequestsPerMinute > 1000)) {
+        return res.status(400).json({ error: 'API requests per minute must be between 1 and 1000' });
+      }
+      if (loginAttemptsPerHour !== undefined && (loginAttemptsPerHour < 1 || loginAttemptsPerHour > 100)) {
+        return res.status(400).json({ error: 'Login attempts per hour must be between 1 and 100' });
+      }
+      if (adminActionsPerMinute !== undefined && (adminActionsPerMinute < 1 || adminActionsPerMinute > 200)) {
+        return res.status(400).json({ error: 'Admin actions per minute must be between 1 and 200' });
+      }
+    }
+
+    // Validate HTTPS
+    if (https) {
+      if (https.enabled && (!https.certPath || !https.keyPath)) {
+        return res.status(400).json({ error: 'Certificate and key paths required for HTTPS' });
+      }
+      if (https.port !== undefined && (https.port < 1 || https.port > 65535)) {
+        return res.status(400).json({ error: 'Invalid HTTPS port' });
+      }
+    }
+
+    // Update security config
+    if (!config.server) config.server = {};
+    if (!config.server.security) config.server.security = {};
+
+    if (ipWhitelist !== undefined) {
+      config.server.security.ipWhitelist = {
+        enabled: ipWhitelist.enabled || false,
+        allowedIPs: ipWhitelist.allowedIPs || [],
+        allowLocalhost: ipWhitelist.allowLocalhost !== false
+      };
+    }
+
+    if (rateLimiting !== undefined) {
+      config.server.security.rateLimiting = {
+        apiRequestsPerMinute: rateLimiting.apiRequestsPerMinute || 60,
+        loginAttemptsPerHour: rateLimiting.loginAttemptsPerHour || 10,
+        adminActionsPerMinute: rateLimiting.adminActionsPerMinute || 20
+      };
+    }
+
+    if (https !== undefined) {
+      config.server.security.https = {
+        enabled: https.enabled || false,
+        certPath: https.certPath || '',
+        keyPath: https.keyPath || '',
+        port: https.port || 443
+      };
+    }
+
+    if (trustedProxies !== undefined) {
+      config.server.security.trustedProxies = trustedProxies;
+    }
+
+    if (allowedOrigins !== undefined) {
+      config.server.security.allowedOrigins = allowedOrigins;
+    }
+
+    if (saveConfig(config)) {
+      res.json({
+        success: true,
+        message: 'Security settings saved. Some changes may require server restart.'
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to save security settings' });
+    }
+  } catch (err) {
+    console.error('Security settings error:', err);
+    res.status(500).json({ error: 'Failed to save security settings' });
+  }
+});
+
 // Get full configuration
-app.get('/api/admin/config', adminLimiter, adminAuth, (req, res) => {
+app.get('/api/admin/config', ipWhitelistMiddleware, adminLimiter, adminAuth, (req, res) => {
   const safeConfig = JSON.parse(JSON.stringify(config));
 
   // Mask sensitive data
@@ -3359,7 +3602,7 @@ app.get('/api/admin/config', adminLimiter, adminAuth, (req, res) => {
 });
 
 // Save configuration
-app.put('/api/admin/config', adminLimiter, adminAuth, async (req, res) => {
+app.put('/api/admin/config', ipWhitelistMiddleware, adminLimiter, adminAuth, async (req, res) => {
   try {
     const newConfig = req.body;
 
@@ -3461,7 +3704,7 @@ app.put('/api/admin/config', adminLimiter, adminAuth, async (req, res) => {
 });
 
 // Test calendar URL
-app.post('/api/admin/test-calendar', adminLimiter, adminAuth, async (req, res) => {
+app.post('/api/admin/test-calendar', ipWhitelistMiddleware, adminLimiter, adminAuth, async (req, res) => {
   try {
     const { url } = req.body;
 
@@ -3501,7 +3744,7 @@ app.post('/api/admin/test-calendar', adminLimiter, adminAuth, async (req, res) =
 });
 
 // Test weather API
-app.post('/api/admin/test-weather', adminLimiter, adminAuth, async (req, res) => {
+app.post('/api/admin/test-weather', ipWhitelistMiddleware, adminLimiter, adminAuth, async (req, res) => {
   try {
     const { apiKey, latitude, longitude } = req.body;
 
@@ -3542,7 +3785,7 @@ app.post('/api/admin/test-weather', adminLimiter, adminAuth, async (req, res) =>
 });
 
 // Reload configuration
-app.post('/api/admin/reload', adminLimiter, adminAuth, (req, res) => {
+app.post('/api/admin/reload', ipWhitelistMiddleware, adminLimiter, adminAuth, (req, res) => {
   if (loadConfig()) {
     res.json({ success: true, message: 'Configuration reloaded' });
   } else {
@@ -3574,9 +3817,48 @@ app.use((err, req, res, next) => {
 // Start Server
 // ============================================
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Calboard server running at http://localhost:${PORT}`);
-  console.log(`Access from other devices: http://<your-pi-ip>:${PORT}`);
+function startServer() {
+  const httpsConfig = config.server?.security?.https;
+  const ipWhitelist = config.server?.security?.ipWhitelist;
+
+  // Start HTTPS server if configured
+  if (httpsConfig?.enabled && httpsConfig.certPath && httpsConfig.keyPath) {
+    try {
+      const httpsOptions = {
+        cert: fs.readFileSync(httpsConfig.certPath),
+        key: fs.readFileSync(httpsConfig.keyPath)
+      };
+
+      const httpsPort = httpsConfig.port || 443;
+      https.createServer(httpsOptions, app).listen(httpsPort, '0.0.0.0', () => {
+        console.log(`Calboard HTTPS server running at https://localhost:${httpsPort}`);
+        console.log(`Secure access from other devices: https://<your-pi-ip>:${httpsPort}`);
+      });
+
+      // Also start HTTP server to redirect to HTTPS
+      const httpApp = express();
+      httpApp.use((req, res) => {
+        res.redirect(`https://${req.hostname}:${httpsPort}${req.url}`);
+      });
+      http.createServer(httpApp).listen(PORT, '0.0.0.0', () => {
+        console.log(`HTTP redirect server on port ${PORT} -> HTTPS`);
+      });
+    } catch (err) {
+      console.error('Failed to start HTTPS server:', err.message);
+      console.log('Falling back to HTTP...');
+      startHTTPServer();
+    }
+  } else {
+    startHTTPServer();
+  }
+
+  function startHTTPServer() {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Calboard server running at http://localhost:${PORT}`);
+      console.log(`Access from other devices: http://<your-pi-ip>:${PORT}`);
+    });
+  }
+
   console.log('');
 
   if (!isSetupComplete()) {
@@ -3590,4 +3872,15 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('  - Session-based authentication');
   console.log('  - Bcrypt password hashing');
   console.log('  - Input validation');
-});
+
+  if (ipWhitelist?.enabled) {
+    console.log('  - IP whitelisting for admin panel');
+    console.log(`    Allowed IPs: ${ipWhitelist.allowedIPs?.join(', ') || 'none (localhost only)'}`);
+  }
+
+  if (httpsConfig?.enabled) {
+    console.log('  - HTTPS encryption');
+  }
+}
+
+startServer();
