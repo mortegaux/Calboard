@@ -1,0 +1,35 @@
+{
+  "weather": {
+    "apiKey": "YOUR_OPENWEATHERMAP_API_KEY",
+    "latitude": 30.2672,
+    "longitude": -97.7431,
+    "units": "imperial"
+  },
+  "calendars": [
+    {
+      "name": "Personal",
+      "url": "https://calendar.google.com/calendar/ical/your-calendar-id/basic.ics",
+      "color": "#4CAF50"
+    },
+    {
+      "name": "Work",
+      "url": "https://calendar.google.com/calendar/ical/another-calendar-id/basic.ics",
+      "color": "#9C27B0"
+    },
+    {
+      "name": "Holidays",
+      "url": "https://calendar.google.com/calendar/ical/en.usa%23holiday%40group.v.calendar.google.com/public/basic.ics",
+      "color": "#2196F3"
+    }
+  ],
+  "display": {
+    "daysToShow": 7,
+    "refreshIntervalMinutes": 5,
+    "backgroundImage": "/backgrounds/leaf.jpg",
+    "dateFormat": "en-US",
+    "timeFormat": "12h"
+  },
+  "server": {
+    "port": 3000
+  }
+}
