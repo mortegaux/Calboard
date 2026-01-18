@@ -895,7 +895,7 @@ class Calboard {
       const response = await fetch('/api/widgets');
       const widgets = await response.json();
 
-      // Load enabled widgets
+      // Load enabled widgets - Original
       if (widgets.quotes?.enabled) this.loadQuote();
       if (widgets.moonPhase?.enabled) this.loadMoonPhase();
       if (widgets.news?.enabled) this.loadNews();
@@ -910,6 +910,36 @@ class Calboard {
       if (widgets.messageBoard?.enabled) this.loadMessages();
       if (widgets.homeAssistant?.enabled) this.loadHomeAssistant();
       if (widgets.systemStats?.enabled) this.loadSystemStats();
+
+      // New widgets - Phase 11: Time & Countdowns
+      if (widgets.worldClocks?.enabled) this.loadWorldClocks();
+      if (widgets.eventCountdowns?.enabled) this.loadEventCountdowns();
+      if (widgets.pomodoroTimer?.enabled) this.loadPomodoro();
+
+      // Phase 12: Health & Wellness
+      if (widgets.habitTracker?.enabled) this.loadHabits();
+      if (widgets.waterIntake?.enabled) this.loadWaterIntake();
+      if (widgets.sleepSchedule?.enabled) this.loadSleepSchedule();
+
+      // Phase 13: Daily Content
+      if (widgets.recipeOfDay?.enabled) this.loadRecipe();
+      if (widgets.affirmations?.enabled) this.loadAffirmation();
+      if (widgets.horoscope?.enabled) this.loadHoroscope();
+      if (widgets.trivia?.enabled) this.loadTrivia();
+
+      // Phase 14: Home Management
+      if (widgets.garbageDay?.enabled) this.loadGarbageDay();
+      if (widgets.mealPlanner?.enabled) this.loadMealPlanner();
+      if (widgets.petFeeding?.enabled) this.loadPetFeeding();
+      if (widgets.plantWatering?.enabled) this.loadPlantWatering();
+      if (widgets.laundryTimer?.enabled) this.loadLaundryTimer();
+
+      // Phase 15: Entertainment
+      if (widgets.redditFeed?.enabled) this.loadReddit();
+
+      // Phase 16: Finance Extended
+      if (widgets.currencyExchange?.enabled) this.loadCurrency();
+      if (widgets.budgetTracker?.enabled) this.loadBudget();
     } catch (err) {
       console.error('Failed to load widgets:', err);
     }
@@ -1340,6 +1370,630 @@ class Calboard {
       }
     } catch (err) {
       console.error('System stats widget error:', err);
+    }
+  }
+
+  // ==========================================
+  // New Widgets - Phase 11-16
+  // ==========================================
+
+  async loadWorldClocks() {
+    try {
+      const response = await fetch('/api/widgets/worldclocks');
+      const data = await response.json();
+
+      if (data.enabled && data.clocks?.length) {
+        const widget = document.getElementById('clocks-widget');
+        const container = document.getElementById('world-clocks');
+
+        container.innerHTML = data.clocks.map(clock => {
+          if (clock.error) {
+            return `<div class="clock-item error">${this.escapeHtml(clock.name)}: Error</div>`;
+          }
+          return `
+            <div class="clock-item">
+              <span class="clock-name">${this.escapeHtml(clock.name)}</span>
+              <span class="clock-time">${clock.time}</span>
+              <span class="clock-day">${clock.day}</span>
+            </div>
+          `;
+        }).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('World clocks error:', err);
+    }
+  }
+
+  async loadEventCountdowns() {
+    try {
+      const response = await fetch('/api/widgets/countdowns');
+      const data = await response.json();
+
+      if (data.enabled && data.countdowns?.length) {
+        const widget = document.getElementById('countdown-widget');
+        const container = document.getElementById('event-countdowns');
+
+        container.innerHTML = data.countdowns.map(event => {
+          const daysText = event.daysUntil === 0 ? 'Today!' :
+                          event.daysUntil === 1 ? 'Tomorrow' :
+                          `${event.daysUntil} days`;
+          return `
+            <div class="countdown-event">
+              <span class="countdown-event-icon">${event.icon}</span>
+              <span class="countdown-event-name">${this.escapeHtml(event.name)}</span>
+              <span class="countdown-event-days ${event.daysUntil <= 1 ? 'soon' : ''}">${daysText}</span>
+            </div>
+          `;
+        }).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Event countdowns error:', err);
+    }
+  }
+
+  async loadPomodoro() {
+    try {
+      const response = await fetch('/api/widgets/pomodoro');
+      const data = await response.json();
+
+      if (data.enabled) {
+        const widget = document.getElementById('pomodoro-widget');
+        this.pomodoroSettings = data;
+        this.pomodoroState = {
+          running: false,
+          mode: 'work',
+          seconds: data.workMinutes * 60,
+          sessions: 0
+        };
+
+        this.updatePomodoroDisplay();
+        this.setupPomodoroControls();
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Pomodoro error:', err);
+    }
+  }
+
+  setupPomodoroControls() {
+    const startBtn = document.getElementById('pomodoro-start');
+    const resetBtn = document.getElementById('pomodoro-reset');
+
+    startBtn.onclick = () => {
+      if (this.pomodoroState.running) {
+        this.pausePomodoro();
+      } else {
+        this.startPomodoro();
+      }
+    };
+
+    resetBtn.onclick = () => this.resetPomodoro();
+  }
+
+  startPomodoro() {
+    this.pomodoroState.running = true;
+    document.getElementById('pomodoro-start').textContent = 'Pause';
+    document.getElementById('pomodoro-status').textContent =
+      this.pomodoroState.mode === 'work' ? 'Focus time!' : 'Break time';
+
+    this.pomodoroInterval = setInterval(() => {
+      this.pomodoroState.seconds--;
+      this.updatePomodoroDisplay();
+
+      if (this.pomodoroState.seconds <= 0) {
+        this.pomodoroComplete();
+      }
+    }, 1000);
+  }
+
+  pausePomodoro() {
+    this.pomodoroState.running = false;
+    document.getElementById('pomodoro-start').textContent = 'Start';
+    document.getElementById('pomodoro-status').textContent = 'Paused';
+    clearInterval(this.pomodoroInterval);
+  }
+
+  resetPomodoro() {
+    clearInterval(this.pomodoroInterval);
+    this.pomodoroState.running = false;
+    this.pomodoroState.mode = 'work';
+    this.pomodoroState.seconds = this.pomodoroSettings.workMinutes * 60;
+    document.getElementById('pomodoro-start').textContent = 'Start';
+    document.getElementById('pomodoro-status').textContent = 'Ready to focus';
+    this.updatePomodoroDisplay();
+  }
+
+  pomodoroComplete() {
+    clearInterval(this.pomodoroInterval);
+    this.pomodoroState.running = false;
+
+    if (this.pomodoroState.mode === 'work') {
+      this.pomodoroState.sessions++;
+      const isLongBreak = this.pomodoroState.sessions % this.pomodoroSettings.sessionsUntilLongBreak === 0;
+      this.pomodoroState.mode = 'break';
+      this.pomodoroState.seconds = isLongBreak
+        ? this.pomodoroSettings.longBreakMinutes * 60
+        : this.pomodoroSettings.breakMinutes * 60;
+      document.getElementById('pomodoro-status').textContent = isLongBreak ? 'Long break!' : 'Short break!';
+    } else {
+      this.pomodoroState.mode = 'work';
+      this.pomodoroState.seconds = this.pomodoroSettings.workMinutes * 60;
+      document.getElementById('pomodoro-status').textContent = 'Ready to focus';
+    }
+
+    document.getElementById('pomodoro-start').textContent = 'Start';
+    this.updatePomodoroDisplay();
+
+    // Play notification sound or show alert
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Pomodoro', { body: document.getElementById('pomodoro-status').textContent });
+    }
+  }
+
+  updatePomodoroDisplay() {
+    const mins = Math.floor(this.pomodoroState.seconds / 60);
+    const secs = this.pomodoroState.seconds % 60;
+    document.getElementById('pomodoro-display').textContent =
+      `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  async loadHabits() {
+    try {
+      const response = await fetch('/api/widgets/habits');
+      const data = await response.json();
+
+      if (data.enabled && data.habits?.length) {
+        const widget = document.getElementById('habits-widget');
+        const container = document.getElementById('habits-list');
+
+        container.innerHTML = data.habits.map(habit => `
+          <div class="habit-item ${habit.completedToday ? 'completed' : ''}">
+            <input type="checkbox" class="habit-checkbox" ${habit.completedToday ? 'checked' : ''}
+              onchange="calboard.toggleHabit('${habit.id}', this.checked)">
+            <span class="habit-icon">${habit.icon || '✓'}</span>
+            <span class="habit-name">${this.escapeHtml(habit.name)}</span>
+            <span class="habit-streak" title="Current streak">${habit.streak || 0} day${habit.streak !== 1 ? 's' : ''}</span>
+          </div>
+        `).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Habits error:', err);
+    }
+  }
+
+  async toggleHabit(id, completed) {
+    try {
+      await fetch(`/api/widgets/habits/${id}/toggle`, { method: 'POST' });
+      this.loadHabits();
+    } catch (err) {
+      console.error('Toggle habit error:', err);
+    }
+  }
+
+  async loadWaterIntake() {
+    try {
+      const response = await fetch('/api/widgets/water');
+      const data = await response.json();
+
+      if (data.enabled) {
+        const widget = document.getElementById('water-widget');
+        const current = data.current || 0;
+        const goal = data.dailyGoal || 8;
+        const percent = Math.min(100, (current / goal) * 100);
+
+        document.getElementById('water-current').textContent = current;
+        document.getElementById('water-goal').textContent = goal;
+        document.getElementById('water-progress').style.background =
+          `linear-gradient(to right, #2196F3 ${percent}%, rgba(255,255,255,0.1) ${percent}%)`;
+
+        document.getElementById('water-add').onclick = () => this.addWater();
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Water intake error:', err);
+    }
+  }
+
+  async addWater() {
+    try {
+      await fetch('/api/widgets/water/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: 1 })
+      });
+      this.loadWaterIntake();
+    } catch (err) {
+      console.error('Add water error:', err);
+    }
+  }
+
+  async loadSleepSchedule() {
+    try {
+      const response = await fetch('/api/widgets/sleep');
+      const data = await response.json();
+
+      if (data.enabled) {
+        const widget = document.getElementById('sleep-widget');
+        document.getElementById('bedtime').textContent = data.bedtime;
+        document.getElementById('waketime').textContent = data.wakeTime;
+
+        const reminder = document.getElementById('sleep-reminder');
+        if (data.showReminder) {
+          reminder.style.display = 'block';
+        } else {
+          reminder.style.display = 'none';
+        }
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Sleep schedule error:', err);
+    }
+  }
+
+  async loadRecipe() {
+    try {
+      const response = await fetch('/api/widgets/recipe');
+      const data = await response.json();
+
+      if (data.enabled && data.recipe) {
+        const widget = document.getElementById('recipe-widget');
+        const recipe = data.recipe;
+
+        document.getElementById('recipe-name').textContent = recipe.name;
+        document.getElementById('recipe-time').textContent = recipe.time;
+        document.getElementById('recipe-difficulty').textContent = recipe.difficulty;
+        document.getElementById('recipe-ingredients').innerHTML = recipe.ingredients
+          .map(i => `<span class="recipe-ingredient">${this.escapeHtml(i)}</span>`).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Recipe error:', err);
+    }
+  }
+
+  async loadAffirmation() {
+    try {
+      const response = await fetch('/api/widgets/affirmation');
+      const data = await response.json();
+
+      if (data.enabled && data.affirmation) {
+        const widget = document.getElementById('affirmation-widget');
+        document.getElementById('affirmation-text').textContent = data.affirmation;
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Affirmation error:', err);
+    }
+  }
+
+  async loadHoroscope() {
+    try {
+      const response = await fetch('/api/widgets/horoscope');
+      const data = await response.json();
+
+      if (data.enabled) {
+        const widget = document.getElementById('horoscope-widget');
+        document.getElementById('horoscope-emoji').textContent = data.emoji;
+        document.getElementById('horoscope-sign').textContent = data.sign;
+        document.getElementById('horoscope-text').textContent = data.horoscope;
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Horoscope error:', err);
+    }
+  }
+
+  async loadTrivia() {
+    try {
+      const response = await fetch('/api/widgets/trivia');
+      const data = await response.json();
+
+      if (data.enabled) {
+        const widget = document.getElementById('trivia-widget');
+        document.getElementById('trivia-category').textContent = data.category;
+        document.getElementById('trivia-question').textContent = data.question;
+        document.getElementById('trivia-answer').textContent = data.answer;
+        document.getElementById('trivia-answer').style.display = 'none';
+
+        const revealBtn = document.getElementById('trivia-reveal');
+        revealBtn.textContent = 'Reveal Answer';
+        revealBtn.onclick = () => {
+          const answerEl = document.getElementById('trivia-answer');
+          if (answerEl.style.display === 'none') {
+            answerEl.style.display = 'block';
+            revealBtn.textContent = 'Hide Answer';
+          } else {
+            answerEl.style.display = 'none';
+            revealBtn.textContent = 'Reveal Answer';
+          }
+        };
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Trivia error:', err);
+    }
+  }
+
+  async loadGarbageDay() {
+    try {
+      const response = await fetch('/api/widgets/garbage');
+      const data = await response.json();
+
+      if (data.enabled) {
+        const widget = document.getElementById('garbage-widget');
+        const container = document.getElementById('garbage-schedule');
+
+        let html = '';
+        if (data.hasToday) {
+          html += `<div class="garbage-alert today">Today: ${data.todayItems.map(i =>
+            `<span class="garbage-type" style="color: ${i.color || '#666'}">${this.escapeHtml(i.type)}</span>`
+          ).join(', ')}</div>`;
+        }
+        if (data.hasTomorrow) {
+          html += `<div class="garbage-alert tomorrow">Tomorrow: ${data.tomorrowItems.map(i =>
+            `<span class="garbage-type" style="color: ${i.color || '#666'}">${this.escapeHtml(i.type)}</span>`
+          ).join(', ')}</div>`;
+        }
+
+        if (!data.hasToday && !data.hasTomorrow) {
+          const next = data.schedule[0];
+          html = `<div class="garbage-next">Next: ${this.escapeHtml(next.type)} on ${next.day}</div>`;
+        }
+
+        container.innerHTML = html;
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Garbage day error:', err);
+    }
+  }
+
+  async loadMealPlanner() {
+    try {
+      const response = await fetch('/api/widgets/meals');
+      const data = await response.json();
+
+      if (data.enabled) {
+        const widget = document.getElementById('meals-widget');
+        const container = document.getElementById('meals-content');
+        const today = data.today || {};
+
+        container.innerHTML = `
+          <div class="meal-item">
+            <span class="meal-icon">🌅</span>
+            <span class="meal-label">Breakfast</span>
+            <span class="meal-value">${this.escapeHtml(today.breakfast) || '—'}</span>
+          </div>
+          <div class="meal-item">
+            <span class="meal-icon">☀️</span>
+            <span class="meal-label">Lunch</span>
+            <span class="meal-value">${this.escapeHtml(today.lunch) || '—'}</span>
+          </div>
+          <div class="meal-item">
+            <span class="meal-icon">🌙</span>
+            <span class="meal-label">Dinner</span>
+            <span class="meal-value">${this.escapeHtml(today.dinner) || '—'}</span>
+          </div>
+        `;
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Meal planner error:', err);
+    }
+  }
+
+  async loadPetFeeding() {
+    try {
+      const response = await fetch('/api/widgets/pets');
+      const data = await response.json();
+
+      if (data.enabled && data.pets?.length) {
+        const widget = document.getElementById('pets-widget');
+        const container = document.getElementById('pets-list');
+
+        container.innerHTML = data.pets.map(pet => `
+          <div class="pet-item">
+            <span class="pet-icon">${pet.icon || '🐾'}</span>
+            <span class="pet-name">${this.escapeHtml(pet.name)}</span>
+            <span class="pet-status">${pet.fedToday}/${pet.totalFeedingsToday} feedings</span>
+            <button class="pet-feed-btn" onclick="calboard.feedPet('${pet.id}')">Feed</button>
+          </div>
+        `).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Pet feeding error:', err);
+    }
+  }
+
+  async feedPet(id) {
+    try {
+      await fetch(`/api/widgets/pets/${id}/feed`, { method: 'POST' });
+      this.loadPetFeeding();
+    } catch (err) {
+      console.error('Feed pet error:', err);
+    }
+  }
+
+  async loadPlantWatering() {
+    try {
+      const response = await fetch('/api/widgets/plants');
+      const data = await response.json();
+
+      if (data.enabled && data.plants?.length) {
+        const widget = document.getElementById('plants-widget');
+        const container = document.getElementById('plants-list');
+
+        container.innerHTML = data.plants.map(plant => `
+          <div class="plant-item ${plant.needsWater ? 'needs-water' : ''}">
+            <span class="plant-icon">${plant.icon || '🌱'}</span>
+            <span class="plant-name">${this.escapeHtml(plant.name)}</span>
+            <span class="plant-status">${plant.needsWater ? 'Needs water!' : `Water in ${plant.daysUntilWater} days`}</span>
+            <button class="plant-water-btn" onclick="calboard.waterPlant('${plant.id}')">Water</button>
+          </div>
+        `).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Plant watering error:', err);
+    }
+  }
+
+  async waterPlant(id) {
+    try {
+      await fetch(`/api/widgets/plants/${id}/water`, { method: 'POST' });
+      this.loadPlantWatering();
+    } catch (err) {
+      console.error('Water plant error:', err);
+    }
+  }
+
+  async loadLaundryTimer() {
+    try {
+      const response = await fetch('/api/widgets/laundry');
+      const data = await response.json();
+
+      if (data.enabled) {
+        const widget = document.getElementById('laundry-widget');
+        const container = document.getElementById('laundry-timers');
+
+        // Set up start buttons
+        document.getElementById('start-washer').onclick = () => this.startLaundry('washer');
+        document.getElementById('start-dryer').onclick = () => this.startLaundry('dryer');
+
+        // Show active timers
+        const now = Date.now();
+        const activeTimers = (data.activeTimers || []).filter(t => new Date(t.endsAt) > now);
+
+        container.innerHTML = activeTimers.map(timer => {
+          const remaining = Math.max(0, Math.floor((new Date(timer.endsAt) - now) / 1000 / 60));
+          return `
+            <div class="laundry-timer">
+              <span class="laundry-type">${timer.type === 'dryer' ? '🔥 Dryer' : '💧 Washer'}</span>
+              <span class="laundry-remaining">${remaining} min left</span>
+              <button class="laundry-clear" onclick="calboard.clearLaundry('${timer.id}')">×</button>
+            </div>
+          `;
+        }).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Laundry timer error:', err);
+    }
+  }
+
+  async startLaundry(type) {
+    try {
+      await fetch('/api/widgets/laundry/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type })
+      });
+      this.loadLaundryTimer();
+    } catch (err) {
+      console.error('Start laundry error:', err);
+    }
+  }
+
+  async clearLaundry(id) {
+    try {
+      await fetch(`/api/widgets/laundry/${id}`, { method: 'DELETE' });
+      this.loadLaundryTimer();
+    } catch (err) {
+      console.error('Clear laundry error:', err);
+    }
+  }
+
+  async loadReddit() {
+    try {
+      const response = await fetch('/api/widgets/reddit');
+      const data = await response.json();
+
+      if (data.enabled && data.posts?.length) {
+        const widget = document.getElementById('reddit-widget');
+        const container = document.getElementById('reddit-posts');
+
+        container.innerHTML = data.posts.map(post => `
+          <div class="reddit-post" onclick="window.open('${post.url}', '_blank')">
+            <div class="reddit-post-subreddit">r/${post.subreddit}</div>
+            <div class="reddit-post-title">${this.escapeHtml(post.title)}</div>
+            <div class="reddit-post-meta">
+              <span>↑ ${post.score}</span>
+              <span>💬 ${post.comments}</span>
+            </div>
+          </div>
+        `).join('');
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Reddit error:', err);
+    }
+  }
+
+  async loadCurrency() {
+    try {
+      const response = await fetch('/api/widgets/currency');
+      const data = await response.json();
+
+      if (data.enabled && data.rates?.length) {
+        const widget = document.getElementById('currency-widget');
+        const container = document.getElementById('currency-rates');
+
+        container.innerHTML = `
+          <div class="currency-base">1 ${data.base} =</div>
+          ${data.rates.map(rate => `
+            <div class="currency-rate">
+              <span class="currency-code">${rate.currency}</span>
+              <span class="currency-value">${rate.rate}</span>
+            </div>
+          `).join('')}
+        `;
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Currency error:', err);
+    }
+  }
+
+  async loadBudget() {
+    try {
+      const response = await fetch('/api/widgets/budget');
+      const data = await response.json();
+
+      if (data.enabled) {
+        const widget = document.getElementById('budget-widget');
+        const budget = data.monthlyBudget || 0;
+        const spent = data.spent || 0;
+        const remaining = data.remaining || 0;
+        const percent = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
+
+        document.getElementById('budget-spent').textContent = spent.toFixed(2);
+        document.getElementById('budget-remaining').textContent = remaining.toFixed(2);
+
+        const progressColor = percent > 90 ? '#f44336' : percent > 75 ? '#FF9800' : '#4CAF50';
+        document.getElementById('budget-progress').innerHTML = `
+          <div class="budget-bar" style="width: ${percent}%; background: ${progressColor}"></div>
+        `;
+
+        widget.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Budget error:', err);
     }
   }
 

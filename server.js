@@ -221,6 +221,94 @@ const DEFAULT_CONFIG = {
       showMemory: true,
       showTemp: true,
       showNetwork: false
+    },
+    // Phase 11: Time & Countdowns
+    worldClocks: {
+      enabled: false,
+      timezones: []  // [{name: 'Tokyo', timezone: 'Asia/Tokyo'}]
+    },
+    eventCountdowns: {
+      enabled: false,
+      events: []  // [{name: 'Christmas', date: '2024-12-25', icon: '🎄'}]
+    },
+    pomodoroTimer: {
+      enabled: false,
+      workMinutes: 25,
+      breakMinutes: 5,
+      longBreakMinutes: 15,
+      sessionsUntilLongBreak: 4
+    },
+    // Phase 12: Health & Wellness
+    habitTracker: {
+      enabled: false,
+      habits: []  // [{name: 'Exercise', icon: '🏃', frequency: 'daily'}]
+    },
+    waterIntake: {
+      enabled: false,
+      dailyGoal: 8,  // glasses
+      glassSize: 8   // oz
+    },
+    sleepSchedule: {
+      enabled: false,
+      bedtime: '22:00',
+      wakeTime: '06:00',
+      reminderBefore: 30  // minutes
+    },
+    // Phase 13: Daily Content
+    recipeOfDay: {
+      enabled: false,
+      dietary: 'any'  // 'any', 'vegetarian', 'vegan', 'gluten-free'
+    },
+    affirmations: {
+      enabled: false,
+      category: 'general'  // 'general', 'confidence', 'gratitude', 'success'
+    },
+    horoscope: {
+      enabled: false,
+      sign: 'aries'
+    },
+    trivia: {
+      enabled: false,
+      category: 'general'
+    },
+    // Phase 14: Home Management
+    garbageDay: {
+      enabled: false,
+      schedule: []  // [{type: 'Trash', day: 'Monday', color: '#666'}]
+    },
+    mealPlanner: {
+      enabled: false,
+      meals: {}  // {date: {breakfast: '', lunch: '', dinner: ''}}
+    },
+    petFeeding: {
+      enabled: false,
+      pets: []  // [{name: 'Max', times: ['08:00', '18:00'], fed: []}]
+    },
+    plantWatering: {
+      enabled: false,
+      plants: []  // [{name: 'Fern', frequency: 7, lastWatered: ''}]
+    },
+    laundryTimer: {
+      enabled: false,
+      washerMinutes: 45,
+      dryerMinutes: 60
+    },
+    // Phase 15: Entertainment
+    redditFeed: {
+      enabled: false,
+      subreddits: ['worldnews', 'technology'],
+      maxPosts: 5
+    },
+    // Phase 16: Finance Extended
+    currencyExchange: {
+      enabled: false,
+      baseCurrency: 'USD',
+      currencies: ['EUR', 'GBP', 'JPY']
+    },
+    budgetTracker: {
+      enabled: false,
+      monthlyBudget: 0,
+      categories: []
     }
   },
   integrations: {
@@ -254,7 +342,12 @@ const widgetCache = {
   onThisDay: { data: null, timestamp: 0 },
   stocks: { data: null, timestamp: 0 },
   crypto: { data: null, timestamp: 0 },
-  sports: { data: null, timestamp: 0 }
+  sports: { data: null, timestamp: 0 },
+  reddit: { data: null, timestamp: 0 },
+  currency: { data: null, timestamp: 0 },
+  horoscope: { data: null, timestamp: 0 },
+  trivia: { data: null, timestamp: 0 },
+  recipe: { data: null, timestamp: 0 }
 };
 
 function loadConfig() {
@@ -1163,6 +1256,132 @@ const JOKES_DB = [
   { setup: "What do you call a lazy kangaroo?", punchline: "A pouch potato!" },
   { setup: "Why don't skeletons fight each other?", punchline: "They don't have the guts!" },
   { setup: "What did one wall say to the other wall?", punchline: "I'll meet you at the corner!" }
+];
+
+// Built-in affirmations database
+const AFFIRMATIONS_DB = [
+  "I am capable of achieving anything I set my mind to.",
+  "I choose to be happy and spread positivity.",
+  "I am worthy of love and respect.",
+  "Today I will be the best version of myself.",
+  "I embrace challenges as opportunities for growth.",
+  "My potential is limitless.",
+  "I am grateful for all the good things in my life.",
+  "I radiate confidence and positivity.",
+  "Every day is a new opportunity to improve.",
+  "I trust in my abilities and decisions.",
+  "I am surrounded by love and support.",
+  "I choose to focus on what I can control.",
+  "I am strong, resilient, and brave.",
+  "My thoughts create my reality, and I choose positive thoughts.",
+  "I deserve success and happiness.",
+  "I am making progress every single day.",
+  "I release all negative thoughts and embrace peace.",
+  "I am exactly where I need to be.",
+  "I have the power to create change.",
+  "Today I choose joy."
+];
+
+// Built-in trivia database
+const TRIVIA_DB = [
+  { question: "What is the largest planet in our solar system?", answer: "Jupiter", category: "Science" },
+  { question: "Who painted the Mona Lisa?", answer: "Leonardo da Vinci", category: "Art" },
+  { question: "What is the chemical symbol for gold?", answer: "Au", category: "Science" },
+  { question: "Which country has the most natural lakes?", answer: "Canada", category: "Geography" },
+  { question: "What year did World War I begin?", answer: "1914", category: "History" },
+  { question: "What is the smallest country in the world?", answer: "Vatican City", category: "Geography" },
+  { question: "Who wrote 'Romeo and Juliet'?", answer: "William Shakespeare", category: "Literature" },
+  { question: "What is the hardest natural substance on Earth?", answer: "Diamond", category: "Science" },
+  { question: "How many sides does a hexagon have?", answer: "6", category: "Math" },
+  { question: "What is the capital of Australia?", answer: "Canberra", category: "Geography" },
+  { question: "Who invented the telephone?", answer: "Alexander Graham Bell", category: "History" },
+  { question: "What is the largest ocean on Earth?", answer: "Pacific Ocean", category: "Geography" },
+  { question: "What element does 'O' represent on the periodic table?", answer: "Oxygen", category: "Science" },
+  { question: "In what year did the Titanic sink?", answer: "1912", category: "History" },
+  { question: "What is the fastest land animal?", answer: "Cheetah", category: "Nature" }
+];
+
+// Built-in horoscope database
+const HOROSCOPE_DB = {
+  aries: [
+    "Today brings exciting opportunities for leadership. Trust your instincts.",
+    "Your energy is magnetic today. Use it to inspire others around you.",
+    "A bold decision awaits. Don't be afraid to take the first step."
+  ],
+  taurus: [
+    "Financial matters look favorable. Consider your long-term investments.",
+    "Take time to appreciate life's simple pleasures today.",
+    "Patience will be your greatest asset. Good things come to those who wait."
+  ],
+  gemini: [
+    "Communication is your superpower today. Express yourself clearly.",
+    "Curiosity leads you to unexpected discoveries. Follow your interests.",
+    "Social connections bring joy. Reach out to someone you've been thinking about."
+  ],
+  cancer: [
+    "Home and family matters take center stage. Nurture your closest bonds.",
+    "Trust your intuition today. It's guiding you in the right direction.",
+    "Self-care isn't selfish. Take time to recharge your emotional batteries."
+  ],
+  leo: [
+    "Your creativity shines bright today. Share your talents with the world.",
+    "Recognition for your efforts is coming. Stay confident and proud.",
+    "Romance and fun are highlighted. Let your heart lead the way."
+  ],
+  virgo: [
+    "Organization brings peace of mind. Tackle that to-do list with purpose.",
+    "Your attention to detail impresses others. Quality over quantity wins.",
+    "Health matters deserve focus. Small positive changes make big impacts."
+  ],
+  libra: [
+    "Balance in relationships brings harmony. Seek fair compromises.",
+    "Beauty and art inspire you today. Surround yourself with what you love.",
+    "Diplomatic skills help resolve conflicts. Be the peacemaker you naturally are."
+  ],
+  scorpio: [
+    "Deep insights surface today. Trust your powerful intuition.",
+    "Transformation is possible. Let go of what no longer serves you.",
+    "Intensity in pursuits brings success. Focus your passion wisely."
+  ],
+  sagittarius: [
+    "Adventure calls your name. Even small explorations bring joy.",
+    "Optimism attracts good fortune. Keep your spirits high.",
+    "Learning something new expands your world. Stay curious."
+  ],
+  capricorn: [
+    "Career ambitions get a boost today. Your hard work pays off.",
+    "Discipline and structure help you achieve your goals.",
+    "Practical wisdom guides your decisions. Trust your experience."
+  ],
+  aquarius: [
+    "Innovative ideas flow freely. Don't be afraid to think differently.",
+    "Community involvement brings fulfillment. Connect with like-minded people.",
+    "Humanitarian efforts align with your values. Make a difference."
+  ],
+  pisces: [
+    "Dreams and creativity flourish. Tap into your artistic side.",
+    "Compassion for others deepens connections. Be the friend you'd want to have.",
+    "Spiritual insights offer guidance. Trust the universe's timing."
+  ]
+};
+
+// Built-in recipes database
+const RECIPES_DB = [
+  { name: "Classic Avocado Toast", time: "10 min", difficulty: "Easy", ingredients: ["bread", "avocado", "lemon", "salt", "red pepper flakes"], dietary: "vegetarian" },
+  { name: "Greek Yogurt Parfait", time: "5 min", difficulty: "Easy", ingredients: ["Greek yogurt", "granola", "honey", "berries"], dietary: "vegetarian" },
+  { name: "Caprese Salad", time: "10 min", difficulty: "Easy", ingredients: ["tomatoes", "mozzarella", "basil", "olive oil", "balsamic"], dietary: "vegetarian" },
+  { name: "Chicken Stir Fry", time: "25 min", difficulty: "Medium", ingredients: ["chicken breast", "vegetables", "soy sauce", "ginger", "garlic"], dietary: "any" },
+  { name: "Vegetable Curry", time: "35 min", difficulty: "Medium", ingredients: ["vegetables", "coconut milk", "curry paste", "rice"], dietary: "vegan" },
+  { name: "Pasta Primavera", time: "20 min", difficulty: "Easy", ingredients: ["pasta", "vegetables", "olive oil", "parmesan", "garlic"], dietary: "vegetarian" },
+  { name: "Quinoa Buddha Bowl", time: "25 min", difficulty: "Easy", ingredients: ["quinoa", "chickpeas", "vegetables", "tahini", "lemon"], dietary: "vegan" },
+  { name: "Shrimp Tacos", time: "20 min", difficulty: "Medium", ingredients: ["shrimp", "tortillas", "cabbage", "lime", "cilantro"], dietary: "any" },
+  { name: "Mushroom Risotto", time: "40 min", difficulty: "Medium", ingredients: ["arborio rice", "mushrooms", "white wine", "parmesan", "broth"], dietary: "vegetarian" },
+  { name: "Lentil Soup", time: "45 min", difficulty: "Easy", ingredients: ["lentils", "carrots", "celery", "tomatoes", "spices"], dietary: "vegan" },
+  { name: "Salmon with Vegetables", time: "25 min", difficulty: "Medium", ingredients: ["salmon", "asparagus", "lemon", "garlic", "olive oil"], dietary: "any" },
+  { name: "Black Bean Tacos", time: "15 min", difficulty: "Easy", ingredients: ["black beans", "tortillas", "avocado", "salsa", "lime"], dietary: "vegan" },
+  { name: "Omelette", time: "10 min", difficulty: "Easy", ingredients: ["eggs", "cheese", "vegetables", "butter"], dietary: "vegetarian" },
+  { name: "Thai Peanut Noodles", time: "20 min", difficulty: "Easy", ingredients: ["noodles", "peanut butter", "soy sauce", "vegetables", "lime"], dietary: "vegan" },
+  { name: "Grilled Cheese & Tomato Soup", time: "25 min", difficulty: "Easy", ingredients: ["bread", "cheese", "tomatoes", "butter", "basil"], dietary: "vegetarian" }
 ];
 
 // Get quote of the day
@@ -2237,6 +2456,831 @@ app.get('/api/widgets/system', async (req, res) => {
   }
 });
 
+// ============================================
+// Phase 11: Time & Countdowns Widgets
+// ============================================
+
+// World Clocks
+app.get('/api/widgets/worldclocks', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.worldClocks?.enabled || !widgets.worldClocks.timezones?.length) {
+      return res.json({ enabled: false });
+    }
+
+    const clocks = widgets.worldClocks.timezones.map(tz => {
+      try {
+        const now = new Date();
+        const options = { timeZone: tz.timezone, hour: '2-digit', minute: '2-digit', hour12: true };
+        const time = now.toLocaleTimeString('en-US', options);
+        const dateOptions = { timeZone: tz.timezone, weekday: 'short' };
+        const day = now.toLocaleDateString('en-US', dateOptions);
+        return { name: tz.name, timezone: tz.timezone, time, day };
+      } catch (e) {
+        return { name: tz.name, error: true };
+      }
+    });
+
+    res.json({ enabled: true, clocks });
+  } catch (err) {
+    console.error('World clocks error:', err);
+    res.status(500).json({ error: 'World clocks unavailable' });
+  }
+});
+
+// Event Countdowns
+app.get('/api/widgets/countdowns', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.eventCountdowns?.enabled || !widgets.eventCountdowns.events?.length) {
+      return res.json({ enabled: false });
+    }
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const countdowns = widgets.eventCountdowns.events
+      .map(event => {
+        const eventDate = new Date(event.date);
+        eventDate.setHours(0, 0, 0, 0);
+        const diffTime = eventDate - now;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return {
+          name: event.name,
+          date: event.date,
+          icon: event.icon || '📅',
+          daysUntil: diffDays,
+          isPast: diffDays < 0
+        };
+      })
+      .filter(e => !e.isPast)
+      .sort((a, b) => a.daysUntil - b.daysUntil)
+      .slice(0, 5);
+
+    res.json({ enabled: true, countdowns });
+  } catch (err) {
+    console.error('Countdowns error:', err);
+    res.status(500).json({ error: 'Countdowns unavailable' });
+  }
+});
+
+// Pomodoro Timer settings
+app.get('/api/widgets/pomodoro', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.pomodoroTimer?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    res.json({
+      enabled: true,
+      workMinutes: widgets.pomodoroTimer.workMinutes || 25,
+      breakMinutes: widgets.pomodoroTimer.breakMinutes || 5,
+      longBreakMinutes: widgets.pomodoroTimer.longBreakMinutes || 15,
+      sessionsUntilLongBreak: widgets.pomodoroTimer.sessionsUntilLongBreak || 4
+    });
+  } catch (err) {
+    console.error('Pomodoro error:', err);
+    res.status(500).json({ error: 'Pomodoro unavailable' });
+  }
+});
+
+// ============================================
+// Phase 12: Health & Wellness Widgets
+// ============================================
+
+// Habit Tracker
+app.get('/api/widgets/habits', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.habitTracker?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const habits = (widgets.habitTracker.habits || []).map(habit => ({
+      ...habit,
+      completedToday: (habit.completions || []).includes(today),
+      streak: calculateStreak(habit.completions || [])
+    }));
+
+    res.json({ enabled: true, habits, today });
+  } catch (err) {
+    console.error('Habits error:', err);
+    res.status(500).json({ error: 'Habits unavailable' });
+  }
+});
+
+function calculateStreak(completions) {
+  if (!completions || completions.length === 0) return 0;
+
+  const sorted = [...completions].sort().reverse();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let streak = 0;
+  let checkDate = new Date(today);
+
+  for (const completion of sorted) {
+    const compDate = new Date(completion);
+    compDate.setHours(0, 0, 0, 0);
+
+    const diffDays = Math.floor((checkDate - compDate) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0 || diffDays === 1) {
+      streak++;
+      checkDate = compDate;
+    } else {
+      break;
+    }
+  }
+
+  return streak;
+}
+
+// Toggle habit completion
+app.post('/api/widgets/habits/:id/toggle', adminAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+    const today = new Date().toISOString().split('T')[0];
+
+    if (!config.widgets?.habitTracker?.habits) {
+      return res.status(404).json({ error: 'Habit not found' });
+    }
+
+    const habit = config.widgets.habitTracker.habits.find(h => h.id === id);
+    if (!habit) {
+      return res.status(404).json({ error: 'Habit not found' });
+    }
+
+    if (!habit.completions) habit.completions = [];
+
+    const idx = habit.completions.indexOf(today);
+    if (idx === -1) {
+      habit.completions.push(today);
+    } else {
+      habit.completions.splice(idx, 1);
+    }
+
+    saveConfig(config);
+    res.json({ success: true, completedToday: idx === -1, streak: calculateStreak(habit.completions) });
+  } catch (err) {
+    console.error('Toggle habit error:', err);
+    res.status(500).json({ error: 'Failed to toggle habit' });
+  }
+});
+
+// Water Intake
+app.get('/api/widgets/water', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.waterIntake?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const todayIntake = widgets.waterIntake.log?.[today] || 0;
+
+    res.json({
+      enabled: true,
+      dailyGoal: widgets.waterIntake.dailyGoal || 8,
+      glassSize: widgets.waterIntake.glassSize || 8,
+      current: todayIntake,
+      today
+    });
+  } catch (err) {
+    console.error('Water intake error:', err);
+    res.status(500).json({ error: 'Water intake unavailable' });
+  }
+});
+
+// Log water intake
+app.post('/api/widgets/water/log', adminAuth, (req, res) => {
+  try {
+    const { amount } = req.body;
+    const today = new Date().toISOString().split('T')[0];
+
+    if (!config.widgets) config.widgets = { ...DEFAULT_CONFIG.widgets };
+    if (!config.widgets.waterIntake) config.widgets.waterIntake = { enabled: true, dailyGoal: 8, glassSize: 8 };
+    if (!config.widgets.waterIntake.log) config.widgets.waterIntake.log = {};
+
+    const current = config.widgets.waterIntake.log[today] || 0;
+    config.widgets.waterIntake.log[today] = Math.max(0, current + (amount || 1));
+
+    saveConfig(config);
+    res.json({ success: true, current: config.widgets.waterIntake.log[today] });
+  } catch (err) {
+    console.error('Log water error:', err);
+    res.status(500).json({ error: 'Failed to log water' });
+  }
+});
+
+// Sleep Schedule
+app.get('/api/widgets/sleep', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.sleepSchedule?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+
+    const [bedHour, bedMin] = (widgets.sleepSchedule.bedtime || '22:00').split(':').map(Number);
+    const [wakeHour, wakeMin] = (widgets.sleepSchedule.wakeTime || '06:00').split(':').map(Number);
+    const bedtimeMinutes = bedHour * 60 + bedMin;
+    const reminderBefore = widgets.sleepSchedule.reminderBefore || 30;
+
+    const showReminder = currentTime >= (bedtimeMinutes - reminderBefore) && currentTime < bedtimeMinutes;
+
+    res.json({
+      enabled: true,
+      bedtime: widgets.sleepSchedule.bedtime || '22:00',
+      wakeTime: widgets.sleepSchedule.wakeTime || '06:00',
+      showReminder,
+      reminderBefore
+    });
+  } catch (err) {
+    console.error('Sleep schedule error:', err);
+    res.status(500).json({ error: 'Sleep schedule unavailable' });
+  }
+});
+
+// ============================================
+// Phase 13: Daily Content Widgets
+// ============================================
+
+// Recipe of the Day
+app.get('/api/widgets/recipe', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.recipeOfDay?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    const dietary = widgets.recipeOfDay.dietary || 'any';
+    let recipes = RECIPES_DB;
+
+    if (dietary !== 'any') {
+      recipes = RECIPES_DB.filter(r => r.dietary === dietary || r.dietary === 'any');
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const seed = today.split('-').reduce((a, b) => a + parseInt(b), 0);
+    const recipe = recipes[seed % recipes.length];
+
+    res.json({
+      enabled: true,
+      recipe,
+      date: today
+    });
+  } catch (err) {
+    console.error('Recipe error:', err);
+    res.status(500).json({ error: 'Recipe unavailable' });
+  }
+});
+
+// Daily Affirmation
+app.get('/api/widgets/affirmation', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.affirmations?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const seed = today.split('-').reduce((a, b) => a + parseInt(b), 0);
+    const affirmation = AFFIRMATIONS_DB[seed % AFFIRMATIONS_DB.length];
+
+    res.json({
+      enabled: true,
+      affirmation,
+      date: today
+    });
+  } catch (err) {
+    console.error('Affirmation error:', err);
+    res.status(500).json({ error: 'Affirmation unavailable' });
+  }
+});
+
+// Horoscope
+app.get('/api/widgets/horoscope', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.horoscope?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    const sign = (widgets.horoscope.sign || 'aries').toLowerCase();
+    const horoscopes = HOROSCOPE_DB[sign] || HOROSCOPE_DB.aries;
+
+    const today = new Date().toISOString().split('T')[0];
+    const seed = today.split('-').reduce((a, b) => a + parseInt(b), 0);
+    const horoscope = horoscopes[seed % horoscopes.length];
+
+    const signEmojis = {
+      aries: '♈', taurus: '♉', gemini: '♊', cancer: '♋',
+      leo: '♌', virgo: '♍', libra: '♎', scorpio: '♏',
+      sagittarius: '♐', capricorn: '♑', aquarius: '♒', pisces: '♓'
+    };
+
+    res.json({
+      enabled: true,
+      sign: sign.charAt(0).toUpperCase() + sign.slice(1),
+      emoji: signEmojis[sign] || '⭐',
+      horoscope,
+      date: today
+    });
+  } catch (err) {
+    console.error('Horoscope error:', err);
+    res.status(500).json({ error: 'Horoscope unavailable' });
+  }
+});
+
+// Daily Trivia
+app.get('/api/widgets/trivia', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.trivia?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const seed = today.split('-').reduce((a, b) => a + parseInt(b), 0);
+    const trivia = TRIVIA_DB[seed % TRIVIA_DB.length];
+
+    res.json({
+      enabled: true,
+      question: trivia.question,
+      answer: trivia.answer,
+      category: trivia.category,
+      date: today
+    });
+  } catch (err) {
+    console.error('Trivia error:', err);
+    res.status(500).json({ error: 'Trivia unavailable' });
+  }
+});
+
+// ============================================
+// Phase 14: Home Management Widgets
+// ============================================
+
+// Garbage Day
+app.get('/api/widgets/garbage', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.garbageDay?.enabled || !widgets.garbageDay.schedule?.length) {
+      return res.json({ enabled: false });
+    }
+
+    const today = new Date();
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const todayName = dayNames[today.getDay()];
+    const tomorrowName = dayNames[(today.getDay() + 1) % 7];
+
+    const schedule = widgets.garbageDay.schedule.map(item => {
+      let daysUntil;
+      const itemDayIndex = dayNames.indexOf(item.day);
+      const todayIndex = today.getDay();
+
+      if (itemDayIndex === todayIndex) {
+        daysUntil = 0;
+      } else if (itemDayIndex > todayIndex) {
+        daysUntil = itemDayIndex - todayIndex;
+      } else {
+        daysUntil = 7 - todayIndex + itemDayIndex;
+      }
+
+      return {
+        ...item,
+        isToday: item.day === todayName,
+        isTomorrow: item.day === tomorrowName,
+        daysUntil
+      };
+    });
+
+    // Sort by days until
+    schedule.sort((a, b) => a.daysUntil - b.daysUntil);
+
+    const todayItems = schedule.filter(s => s.isToday);
+    const tomorrowItems = schedule.filter(s => s.isTomorrow);
+
+    res.json({
+      enabled: true,
+      schedule,
+      todayItems,
+      tomorrowItems,
+      hasToday: todayItems.length > 0,
+      hasTomorrow: tomorrowItems.length > 0
+    });
+  } catch (err) {
+    console.error('Garbage day error:', err);
+    res.status(500).json({ error: 'Garbage day unavailable' });
+  }
+});
+
+// Meal Planner
+app.get('/api/widgets/meals', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.mealPlanner?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const todayMeals = widgets.mealPlanner.meals?.[today] || {};
+
+    // Get this week's meals
+    const weekMeals = {};
+    const startOfWeek = new Date();
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startOfWeek);
+      date.setDate(date.getDate() + i);
+      const dateKey = date.toISOString().split('T')[0];
+      weekMeals[dateKey] = widgets.mealPlanner.meals?.[dateKey] || {};
+    }
+
+    res.json({
+      enabled: true,
+      today: todayMeals,
+      week: weekMeals,
+      currentDate: today
+    });
+  } catch (err) {
+    console.error('Meal planner error:', err);
+    res.status(500).json({ error: 'Meal planner unavailable' });
+  }
+});
+
+// Update meal
+app.put('/api/widgets/meals', adminAuth, (req, res) => {
+  try {
+    const { date, meal, value } = req.body;
+
+    if (!config.widgets) config.widgets = { ...DEFAULT_CONFIG.widgets };
+    if (!config.widgets.mealPlanner) config.widgets.mealPlanner = { enabled: true, meals: {} };
+    if (!config.widgets.mealPlanner.meals) config.widgets.mealPlanner.meals = {};
+    if (!config.widgets.mealPlanner.meals[date]) config.widgets.mealPlanner.meals[date] = {};
+
+    config.widgets.mealPlanner.meals[date][meal] = sanitizeString(value, 100);
+    saveConfig(config);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Update meal error:', err);
+    res.status(500).json({ error: 'Failed to update meal' });
+  }
+});
+
+// Pet Feeding
+app.get('/api/widgets/pets', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.petFeeding?.enabled || !widgets.petFeeding.pets?.length) {
+      return res.json({ enabled: false });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const pets = widgets.petFeeding.pets.map(pet => ({
+      ...pet,
+      fedToday: (pet.fed || []).filter(f => f.startsWith(today)).length,
+      totalFeedingsToday: (pet.times || []).length
+    }));
+
+    res.json({ enabled: true, pets, today });
+  } catch (err) {
+    console.error('Pet feeding error:', err);
+    res.status(500).json({ error: 'Pet feeding unavailable' });
+  }
+});
+
+// Log pet feeding
+app.post('/api/widgets/pets/:id/feed', adminAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+    const now = new Date().toISOString();
+
+    if (!config.widgets?.petFeeding?.pets) {
+      return res.status(404).json({ error: 'Pet not found' });
+    }
+
+    const pet = config.widgets.petFeeding.pets.find(p => p.id === id);
+    if (!pet) {
+      return res.status(404).json({ error: 'Pet not found' });
+    }
+
+    if (!pet.fed) pet.fed = [];
+    pet.fed.push(now);
+
+    // Keep only last 30 days of feeding records
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    pet.fed = pet.fed.filter(f => new Date(f) > thirtyDaysAgo);
+
+    saveConfig(config);
+    res.json({ success: true, fedAt: now });
+  } catch (err) {
+    console.error('Pet feed error:', err);
+    res.status(500).json({ error: 'Failed to log feeding' });
+  }
+});
+
+// Plant Watering
+app.get('/api/widgets/plants', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.plantWatering?.enabled || !widgets.plantWatering.plants?.length) {
+      return res.json({ enabled: false });
+    }
+
+    const today = new Date();
+    const plants = widgets.plantWatering.plants.map(plant => {
+      const lastWatered = plant.lastWatered ? new Date(plant.lastWatered) : null;
+      let daysUntilWater = 0;
+      let needsWater = true;
+
+      if (lastWatered) {
+        const daysSince = Math.floor((today - lastWatered) / (1000 * 60 * 60 * 24));
+        daysUntilWater = (plant.frequency || 7) - daysSince;
+        needsWater = daysUntilWater <= 0;
+      }
+
+      return {
+        ...plant,
+        needsWater,
+        daysUntilWater: Math.max(0, daysUntilWater),
+        daysSinceWatered: lastWatered ? Math.floor((today - lastWatered) / (1000 * 60 * 60 * 24)) : null
+      };
+    });
+
+    // Sort by needs water first, then by days until water
+    plants.sort((a, b) => {
+      if (a.needsWater !== b.needsWater) return b.needsWater - a.needsWater;
+      return a.daysUntilWater - b.daysUntilWater;
+    });
+
+    res.json({ enabled: true, plants });
+  } catch (err) {
+    console.error('Plant watering error:', err);
+    res.status(500).json({ error: 'Plant watering unavailable' });
+  }
+});
+
+// Water plant
+app.post('/api/widgets/plants/:id/water', adminAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+    const now = new Date().toISOString();
+
+    if (!config.widgets?.plantWatering?.plants) {
+      return res.status(404).json({ error: 'Plant not found' });
+    }
+
+    const plant = config.widgets.plantWatering.plants.find(p => p.id === id);
+    if (!plant) {
+      return res.status(404).json({ error: 'Plant not found' });
+    }
+
+    plant.lastWatered = now;
+    saveConfig(config);
+    res.json({ success: true, wateredAt: now });
+  } catch (err) {
+    console.error('Water plant error:', err);
+    res.status(500).json({ error: 'Failed to water plant' });
+  }
+});
+
+// Laundry Timer
+app.get('/api/widgets/laundry', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.laundryTimer?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    res.json({
+      enabled: true,
+      washerMinutes: widgets.laundryTimer.washerMinutes || 45,
+      dryerMinutes: widgets.laundryTimer.dryerMinutes || 60,
+      activeTimers: widgets.laundryTimer.activeTimers || []
+    });
+  } catch (err) {
+    console.error('Laundry timer error:', err);
+    res.status(500).json({ error: 'Laundry timer unavailable' });
+  }
+});
+
+// Start laundry timer
+app.post('/api/widgets/laundry/start', adminAuth, (req, res) => {
+  try {
+    const { type } = req.body;  // 'washer' or 'dryer'
+
+    if (!config.widgets) config.widgets = { ...DEFAULT_CONFIG.widgets };
+    if (!config.widgets.laundryTimer) config.widgets.laundryTimer = { enabled: true, washerMinutes: 45, dryerMinutes: 60 };
+    if (!config.widgets.laundryTimer.activeTimers) config.widgets.laundryTimer.activeTimers = [];
+
+    const minutes = type === 'dryer'
+      ? (config.widgets.laundryTimer.dryerMinutes || 60)
+      : (config.widgets.laundryTimer.washerMinutes || 45);
+
+    const endsAt = new Date(Date.now() + minutes * 60 * 1000).toISOString();
+
+    config.widgets.laundryTimer.activeTimers.push({
+      id: Date.now().toString(),
+      type,
+      startedAt: new Date().toISOString(),
+      endsAt
+    });
+
+    saveConfig(config);
+    res.json({ success: true, endsAt });
+  } catch (err) {
+    console.error('Start laundry error:', err);
+    res.status(500).json({ error: 'Failed to start timer' });
+  }
+});
+
+// Clear laundry timer
+app.delete('/api/widgets/laundry/:id', adminAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (config.widgets?.laundryTimer?.activeTimers) {
+      config.widgets.laundryTimer.activeTimers =
+        config.widgets.laundryTimer.activeTimers.filter(t => t.id !== id);
+      saveConfig(config);
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Clear laundry error:', err);
+    res.status(500).json({ error: 'Failed to clear timer' });
+  }
+});
+
+// ============================================
+// Phase 15: Entertainment Widgets
+// ============================================
+
+// Reddit Feed
+app.get('/api/widgets/reddit', async (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.redditFeed?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    // Check cache (15 minute refresh)
+    if (widgetCache.reddit.data && Date.now() - widgetCache.reddit.timestamp < 900000) {
+      return res.json({ enabled: true, posts: widgetCache.reddit.data, cached: true });
+    }
+
+    const subreddits = widgets.redditFeed.subreddits || ['worldnews'];
+    const maxPosts = widgets.redditFeed.maxPosts || 5;
+    const allPosts = [];
+
+    for (const subreddit of subreddits.slice(0, 3)) {
+      try {
+        const url = `https://www.reddit.com/r/${subreddit}/hot.json?limit=10`;
+        const response = await fetch(url, {
+          timeout: 10000,
+          headers: { 'User-Agent': 'Calboard/2.0' }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const posts = (data.data?.children || []).map(child => ({
+            title: sanitizeString(child.data.title, 200),
+            subreddit: child.data.subreddit,
+            score: child.data.score,
+            comments: child.data.num_comments,
+            url: `https://reddit.com${child.data.permalink}`
+          }));
+          allPosts.push(...posts);
+        }
+      } catch (subErr) {
+        console.error(`Reddit error for r/${subreddit}:`, subErr.message);
+      }
+    }
+
+    // Sort by score and limit
+    allPosts.sort((a, b) => b.score - a.score);
+    const posts = allPosts.slice(0, maxPosts);
+
+    widgetCache.reddit.data = posts;
+    widgetCache.reddit.timestamp = Date.now();
+
+    res.json({ enabled: true, posts });
+  } catch (err) {
+    console.error('Reddit error:', err);
+    res.status(500).json({ error: 'Reddit unavailable' });
+  }
+});
+
+// ============================================
+// Phase 16: Finance Extended Widgets
+// ============================================
+
+// Currency Exchange
+app.get('/api/widgets/currency', async (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.currencyExchange?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    // Check cache (1 hour refresh)
+    if (widgetCache.currency.data && Date.now() - widgetCache.currency.timestamp < 3600000) {
+      return res.json({ enabled: true, rates: widgetCache.currency.data, cached: true });
+    }
+
+    const baseCurrency = widgets.currencyExchange.baseCurrency || 'USD';
+    const currencies = widgets.currencyExchange.currencies || ['EUR', 'GBP', 'JPY'];
+
+    // Using exchangerate-api (free tier available)
+    const url = `https://api.exchangerate-api.com/v4/latest/${baseCurrency}`;
+    const response = await fetch(url, { timeout: 10000 });
+
+    if (!response.ok) {
+      throw new Error('Currency API error');
+    }
+
+    const data = await response.json();
+
+    const rates = currencies.map(currency => ({
+      currency,
+      rate: data.rates?.[currency]?.toFixed(4) || 'N/A',
+      base: baseCurrency
+    }));
+
+    widgetCache.currency.data = rates;
+    widgetCache.currency.timestamp = Date.now();
+
+    res.json({ enabled: true, rates, base: baseCurrency });
+  } catch (err) {
+    console.error('Currency error:', err);
+    res.status(500).json({ error: 'Currency rates unavailable' });
+  }
+});
+
+// Budget Tracker
+app.get('/api/widgets/budget', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.budgetTracker?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    const today = new Date();
+    const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const monthExpenses = widgets.budgetTracker.expenses?.[monthKey] || [];
+    const totalSpent = monthExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+    res.json({
+      enabled: true,
+      monthlyBudget: widgets.budgetTracker.monthlyBudget || 0,
+      categories: widgets.budgetTracker.categories || [],
+      spent: totalSpent,
+      remaining: (widgets.budgetTracker.monthlyBudget || 0) - totalSpent,
+      expenses: monthExpenses.slice(-10)
+    });
+  } catch (err) {
+    console.error('Budget error:', err);
+    res.status(500).json({ error: 'Budget unavailable' });
+  }
+});
+
+// Add expense
+app.post('/api/widgets/budget/expense', adminAuth, (req, res) => {
+  try {
+    const { amount, category, description } = req.body;
+    const today = new Date();
+    const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+    if (!config.widgets) config.widgets = { ...DEFAULT_CONFIG.widgets };
+    if (!config.widgets.budgetTracker) config.widgets.budgetTracker = { enabled: true, monthlyBudget: 0, categories: [], expenses: {} };
+    if (!config.widgets.budgetTracker.expenses) config.widgets.budgetTracker.expenses = {};
+    if (!config.widgets.budgetTracker.expenses[monthKey]) config.widgets.budgetTracker.expenses[monthKey] = [];
+
+    config.widgets.budgetTracker.expenses[monthKey].push({
+      id: Date.now().toString(),
+      amount: parseFloat(amount) || 0,
+      category: sanitizeString(category, 50),
+      description: sanitizeString(description, 100),
+      date: today.toISOString()
+    });
+
+    saveConfig(config);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Add expense error:', err);
+    res.status(500).json({ error: 'Failed to add expense' });
+  }
+});
+
 // Get all widget states for dashboard
 app.get('/api/widgets', (req, res) => {
   try {
@@ -2265,7 +3309,26 @@ app.get('/api/widgets', (req, res) => {
       homeAssistant: { enabled: widgets.homeAssistant?.enabled || false },
       messageBoard: { enabled: widgets.messageBoard?.enabled || false },
       familyProfiles: { enabled: widgets.familyProfiles?.enabled || false },
-      systemStats: { enabled: widgets.systemStats?.enabled || false }
+      systemStats: { enabled: widgets.systemStats?.enabled || false },
+      // New widgets
+      worldClocks: { enabled: widgets.worldClocks?.enabled || false },
+      eventCountdowns: { enabled: widgets.eventCountdowns?.enabled || false },
+      pomodoroTimer: { enabled: widgets.pomodoroTimer?.enabled || false },
+      habitTracker: { enabled: widgets.habitTracker?.enabled || false },
+      waterIntake: { enabled: widgets.waterIntake?.enabled || false },
+      sleepSchedule: { enabled: widgets.sleepSchedule?.enabled || false },
+      recipeOfDay: { enabled: widgets.recipeOfDay?.enabled || false },
+      affirmations: { enabled: widgets.affirmations?.enabled || false },
+      horoscope: { enabled: widgets.horoscope?.enabled || false },
+      trivia: { enabled: widgets.trivia?.enabled || false },
+      garbageDay: { enabled: widgets.garbageDay?.enabled || false },
+      mealPlanner: { enabled: widgets.mealPlanner?.enabled || false },
+      petFeeding: { enabled: widgets.petFeeding?.enabled || false },
+      plantWatering: { enabled: widgets.plantWatering?.enabled || false },
+      laundryTimer: { enabled: widgets.laundryTimer?.enabled || false },
+      redditFeed: { enabled: widgets.redditFeed?.enabled || false },
+      currencyExchange: { enabled: widgets.currencyExchange?.enabled || false },
+      budgetTracker: { enabled: widgets.budgetTracker?.enabled || false }
     });
   } catch (err) {
     console.error('Widgets status error:', err);

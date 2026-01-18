@@ -240,6 +240,194 @@
           </div>
           <div class="system-stats" id="system-stats"></div>
         </div>
+
+        <!-- World Clocks Widget -->
+        <div class="widget clocks-widget" id="clocks-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">World Clocks</span>
+          </div>
+          <div class="world-clocks" id="world-clocks"></div>
+        </div>
+
+        <!-- Event Countdowns Widget -->
+        <div class="widget countdown-widget" id="countdown-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Countdowns</span>
+          </div>
+          <div class="event-countdowns" id="event-countdowns"></div>
+        </div>
+
+        <!-- Pomodoro Timer Widget -->
+        <div class="widget pomodoro-widget" id="pomodoro-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Pomodoro Timer</span>
+          </div>
+          <div class="pomodoro-content">
+            <div class="pomodoro-display" id="pomodoro-display">25:00</div>
+            <div class="pomodoro-status" id="pomodoro-status">Ready to focus</div>
+            <div class="pomodoro-controls">
+              <button class="pomodoro-btn" id="pomodoro-start">Start</button>
+              <button class="pomodoro-btn" id="pomodoro-reset">Reset</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Habit Tracker Widget -->
+        <div class="widget habits-widget" id="habits-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Habits</span>
+          </div>
+          <div class="habits-list" id="habits-list"></div>
+        </div>
+
+        <!-- Water Intake Widget -->
+        <div class="widget water-widget" id="water-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Water Intake</span>
+          </div>
+          <div class="water-content">
+            <div class="water-progress" id="water-progress"></div>
+            <div class="water-count"><span id="water-current">0</span> / <span id="water-goal">8</span> glasses</div>
+            <button class="water-btn" id="water-add">+ Add Glass</button>
+          </div>
+        </div>
+
+        <!-- Sleep Schedule Widget -->
+        <div class="widget sleep-widget" id="sleep-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Sleep Schedule</span>
+          </div>
+          <div class="sleep-content">
+            <div class="sleep-times">
+              <div class="sleep-time"><span class="sleep-icon">🌙</span> Bedtime: <span id="bedtime">22:00</span></div>
+              <div class="sleep-time"><span class="sleep-icon">☀️</span> Wake: <span id="waketime">06:00</span></div>
+            </div>
+            <div class="sleep-reminder" id="sleep-reminder" style="display: none;">Time to wind down!</div>
+          </div>
+        </div>
+
+        <!-- Recipe Widget -->
+        <div class="widget recipe-widget" id="recipe-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Recipe of the Day</span>
+          </div>
+          <div class="recipe-content">
+            <div class="recipe-name" id="recipe-name"></div>
+            <div class="recipe-meta">
+              <span class="recipe-time" id="recipe-time"></span>
+              <span class="recipe-difficulty" id="recipe-difficulty"></span>
+            </div>
+            <div class="recipe-ingredients" id="recipe-ingredients"></div>
+          </div>
+        </div>
+
+        <!-- Affirmation Widget -->
+        <div class="widget affirmation-widget" id="affirmation-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Daily Affirmation</span>
+          </div>
+          <div class="affirmation-text" id="affirmation-text"></div>
+        </div>
+
+        <!-- Horoscope Widget -->
+        <div class="widget horoscope-widget" id="horoscope-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Horoscope</span>
+          </div>
+          <div class="horoscope-content">
+            <div class="horoscope-sign"><span id="horoscope-emoji"></span> <span id="horoscope-sign"></span></div>
+            <div class="horoscope-text" id="horoscope-text"></div>
+          </div>
+        </div>
+
+        <!-- Trivia Widget -->
+        <div class="widget trivia-widget" id="trivia-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Daily Trivia</span>
+          </div>
+          <div class="trivia-content">
+            <div class="trivia-category" id="trivia-category"></div>
+            <div class="trivia-question" id="trivia-question"></div>
+            <div class="trivia-answer" id="trivia-answer" style="display: none;"></div>
+            <button class="trivia-reveal" id="trivia-reveal">Reveal Answer</button>
+          </div>
+        </div>
+
+        <!-- Garbage Day Widget -->
+        <div class="widget garbage-widget" id="garbage-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Garbage Day</span>
+          </div>
+          <div class="garbage-schedule" id="garbage-schedule"></div>
+        </div>
+
+        <!-- Meal Planner Widget -->
+        <div class="widget meals-widget" id="meals-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Today's Meals</span>
+          </div>
+          <div class="meals-content" id="meals-content"></div>
+        </div>
+
+        <!-- Pet Feeding Widget -->
+        <div class="widget pets-widget" id="pets-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Pet Feeding</span>
+          </div>
+          <div class="pets-list" id="pets-list"></div>
+        </div>
+
+        <!-- Plant Watering Widget -->
+        <div class="widget plants-widget" id="plants-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Plant Care</span>
+          </div>
+          <div class="plants-list" id="plants-list"></div>
+        </div>
+
+        <!-- Laundry Timer Widget -->
+        <div class="widget laundry-widget" id="laundry-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Laundry Timer</span>
+          </div>
+          <div class="laundry-content">
+            <div class="laundry-buttons">
+              <button class="laundry-btn" id="start-washer">Start Washer</button>
+              <button class="laundry-btn" id="start-dryer">Start Dryer</button>
+            </div>
+            <div class="laundry-timers" id="laundry-timers"></div>
+          </div>
+        </div>
+
+        <!-- Reddit Widget -->
+        <div class="widget reddit-widget" id="reddit-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Reddit</span>
+          </div>
+          <div class="reddit-posts" id="reddit-posts"></div>
+        </div>
+
+        <!-- Currency Widget -->
+        <div class="widget currency-widget" id="currency-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Exchange Rates</span>
+          </div>
+          <div class="currency-rates" id="currency-rates"></div>
+        </div>
+
+        <!-- Budget Widget -->
+        <div class="widget budget-widget" id="budget-widget" style="display: none;">
+          <div class="widget-header">
+            <span class="widget-title">Budget</span>
+          </div>
+          <div class="budget-content">
+            <div class="budget-summary">
+              <div class="budget-spent">Spent: $<span id="budget-spent">0</span></div>
+              <div class="budget-remaining">Left: $<span id="budget-remaining">0</span></div>
+            </div>
+            <div class="budget-progress" id="budget-progress"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

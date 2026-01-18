@@ -1635,3 +1635,669 @@ body {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ==========================================
+   New Widgets - Phase 11-16
+   ========================================== */
+
+/* World Clocks Widget */
+.world-clocks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.clock-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+}
+
+.clock-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.clock-time {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent-color);
+}
+
+.clock-day {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+/* Event Countdowns Widget */
+.event-countdowns {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.countdown-event {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+}
+
+.countdown-event-icon {
+  font-size: 20px;
+}
+
+.countdown-event-name {
+  flex: 1;
+  font-size: 13px;
+}
+
+.countdown-event-days {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.countdown-event-days.soon {
+  background: rgba(76, 175, 80, 0.2);
+  color: #81c784;
+}
+
+/* Pomodoro Timer Widget */
+.pomodoro-content {
+  text-align: center;
+  padding: 10px 0;
+}
+
+.pomodoro-display {
+  font-size: 48px;
+  font-weight: 300;
+  font-family: monospace;
+  margin-bottom: 8px;
+  color: var(--accent-color);
+}
+
+.pomodoro-status {
+  font-size: 13px;
+  opacity: 0.7;
+  margin-bottom: 15px;
+}
+
+.pomodoro-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.pomodoro-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  background: var(--accent-color);
+  color: #fff;
+  transition: opacity 0.2s;
+}
+
+.pomodoro-btn:hover {
+  opacity: 0.85;
+}
+
+/* Habits Widget */
+.habits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.habit-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+}
+
+.habit-item.completed {
+  opacity: 0.6;
+}
+
+.habit-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-color);
+}
+
+.habit-icon {
+  font-size: 16px;
+}
+
+.habit-name {
+  flex: 1;
+  font-size: 13px;
+}
+
+.habit-streak {
+  font-size: 11px;
+  padding: 3px 8px;
+  background: rgba(255, 152, 0, 0.2);
+  border-radius: 10px;
+  color: #FFB74D;
+}
+
+/* Water Intake Widget */
+.water-content {
+  text-align: center;
+}
+
+.water-progress {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.water-count {
+  font-size: 24px;
+  font-weight: 300;
+  margin-bottom: 12px;
+}
+
+.water-count span:first-child {
+  font-weight: 500;
+  color: #2196F3;
+}
+
+.water-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 20px;
+  background: #2196F3;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.water-btn:hover {
+  opacity: 0.85;
+}
+
+/* Sleep Schedule Widget */
+.sleep-content {
+  padding: 5px 0;
+}
+
+.sleep-times {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sleep-time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.sleep-time span:last-child {
+  font-weight: 500;
+}
+
+.sleep-reminder {
+  margin-top: 12px;
+  padding: 10px;
+  background: rgba(103, 58, 183, 0.2);
+  border-radius: 8px;
+  text-align: center;
+  font-size: 13px;
+  color: #B39DDB;
+  animation: pulse 2s infinite;
+}
+
+/* Recipe Widget */
+.recipe-content {
+  padding: 5px 0;
+}
+
+.recipe-name {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--accent-color);
+}
+
+.recipe-meta {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.recipe-ingredients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.recipe-ingredient {
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  font-size: 11px;
+}
+
+/* Affirmation Widget */
+.affirmation-text {
+  font-size: 16px;
+  line-height: 1.6;
+  font-style: italic;
+  text-align: center;
+  padding: 15px 10px;
+  color: var(--text-secondary);
+}
+
+.affirmation-text::before {
+  content: '✨ ';
+}
+
+.affirmation-text::after {
+  content: ' ✨';
+}
+
+/* Horoscope Widget */
+.horoscope-content {
+  padding: 5px 0;
+}
+
+.horoscope-sign {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.horoscope-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* Trivia Widget */
+.trivia-content {
+  padding: 5px 0;
+}
+
+.trivia-category {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.6;
+  margin-bottom: 8px;
+}
+
+.trivia-question {
+  font-size: 15px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.trivia-answer {
+  padding: 10px 12px;
+  background: rgba(76, 175, 80, 0.15);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #81c784;
+  margin-bottom: 10px;
+}
+
+.trivia-reveal {
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.trivia-reveal:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Garbage Day Widget */
+.garbage-schedule {
+  padding: 5px 0;
+}
+
+.garbage-alert {
+  padding: 12px 15px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.garbage-alert.today {
+  background: rgba(244, 67, 54, 0.15);
+  border-left: 3px solid #f44336;
+}
+
+.garbage-alert.tomorrow {
+  background: rgba(255, 152, 0, 0.15);
+  border-left: 3px solid #FF9800;
+}
+
+.garbage-type {
+  font-weight: 500;
+}
+
+.garbage-next {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+/* Meal Planner Widget */
+.meals-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.meal-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+}
+
+.meal-icon {
+  font-size: 16px;
+}
+
+.meal-label {
+  font-size: 12px;
+  opacity: 0.6;
+  width: 70px;
+}
+
+.meal-value {
+  flex: 1;
+  font-size: 13px;
+}
+
+/* Pet Feeding Widget */
+.pets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pet-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+}
+
+.pet-icon {
+  font-size: 20px;
+}
+
+.pet-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.pet-status {
+  flex: 1;
+  text-align: right;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.pet-feed-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 15px;
+  background: var(--accent-color);
+  color: #fff;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+/* Plant Watering Widget */
+.plants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plant-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+}
+
+.plant-item.needs-water {
+  background: rgba(33, 150, 243, 0.1);
+  border-left: 3px solid #2196F3;
+}
+
+.plant-icon {
+  font-size: 18px;
+}
+
+.plant-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.plant-status {
+  flex: 1;
+  text-align: right;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.plant-item.needs-water .plant-status {
+  color: #2196F3;
+  opacity: 1;
+  font-weight: 500;
+}
+
+.plant-water-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 15px;
+  background: #2196F3;
+  color: #fff;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+/* Laundry Timer Widget */
+.laundry-content {
+  padding: 5px 0;
+}
+
+.laundry-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.laundry-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.laundry-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.laundry-timers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.laundry-timer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(76, 175, 80, 0.15);
+  border-radius: 6px;
+}
+
+.laundry-type {
+  font-size: 13px;
+}
+
+.laundry-remaining {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.laundry-clear {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 5px;
+}
+
+/* Reddit Widget */
+.reddit-posts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reddit-post {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.reddit-post:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.reddit-post-subreddit {
+  font-size: 11px;
+  color: #FF5722;
+  margin-bottom: 4px;
+}
+
+.reddit-post-title {
+  font-size: 13px;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.reddit-post-meta {
+  display: flex;
+  gap: 15px;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+/* Currency Widget */
+.currency-rates {
+  padding: 5px 0;
+}
+
+.currency-base {
+  font-size: 13px;
+  opacity: 0.7;
+  margin-bottom: 10px;
+}
+
+.currency-rate {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.currency-rate:last-child {
+  border-bottom: none;
+}
+
+.currency-code {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.currency-value {
+  font-size: 14px;
+  color: var(--accent-color);
+}
+
+/* Budget Widget */
+.budget-content {
+  padding: 5px 0;
+}
+
+.budget-summary {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.budget-spent, .budget-remaining {
+  font-size: 14px;
+}
+
+.budget-spent {
+  color: #ef5350;
+}
+
+.budget-remaining {
+  color: #81c784;
+}
+
+.budget-progress {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.budget-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
