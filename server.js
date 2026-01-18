@@ -4,12 +4,21 @@ const ICAL = require('ical.js');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const session = require('express-session');
+const bcrypt = require('bcrypt');
+const validator = require('validator');
 
 const app = express();
 
-// Load configuration
+// ============================================
+// Configuration Management
+// ============================================
+
 let config;
 const CONFIG_PATH = './config.json';
+const BCRYPT_ROUNDS = 12;
 
 function loadConfig() {
   try {
@@ -40,49 +49,265 @@ if (!loadConfig()) {
 
 const PORT = config.server?.port || 3000;
 
-// Middleware
-app.use(express.json());
-app.use(express.static('public'));
+// ============================================
+// Security Middleware
+// ============================================
 
-// Admin authentication middleware
-function adminAuth(req, res, next) {
-  const adminPassword = config.admin?.password;
+// Security headers with helmet
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "https://openweathermap.org", "data:"],
+      scriptSrc: ["'self'"],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: []
+    }
+  },
+  crossOriginEmbedderPolicy: false, // Allow loading weather icons
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true
+  }
+}));
+
+// Rate limiting - General API
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 60, // 60 requests per minute
+  message: { error: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Rate limiting - Login attempts (stricter)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per 15 minutes
+  message: { error: 'Too many login attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true
+});
+
+// Rate limiting - Admin actions
+const adminLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 20, // 20 requests per minute
+  message: { error: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Generate session secret if not exists
+function getSessionSecret() {
+  if (config.server?.sessionSecret) {
+    return config.server.sessionSecret;
+  }
+  // Generate and save a new secret
+  const secret = crypto.randomBytes(64).toString('hex');
+  if (!config.server) config.server = {};
+  config.server.sessionSecret = secret;
+  saveConfig(config);
+  return secret;
+}
+
+// Session middleware
+app.use(session({
+  secret: getSessionSecret(),
+  name: 'calboard.sid', // Custom session name (not default 'connect.sid')
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    httpOnly: true, // Prevent XSS access to cookie
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'strict' // CSRF protection
+  }
+}));
+
+// Body parsing with size limits
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: false, limit: '100kb' }));
+
+// Apply rate limiting to API routes
+app.use('/api/', apiLimiter);
+
+// Serve static files with security headers
+app.use(express.static('public', {
+  dotfiles: 'ignore',
+  index: 'index.html'
+}));
+
+// ============================================
+// Input Validation Helpers
+// ============================================
+
+function validateUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  return validator.isURL(url, {
+    protocols: ['http', 'https'],
+    require_protocol: true,
+    require_valid_protocol: true
+  });
+}
+
+function validateLatitude(lat) {
+  const num = parseFloat(lat);
+  return !isNaN(num) && num >= -90 && num <= 90;
+}
+
+function validateLongitude(lon) {
+  const num = parseFloat(lon);
+  return !isNaN(num) && num >= -180 && num <= 180;
+}
+
+function validateColor(color) {
+  if (!color || typeof color !== 'string') return false;
+  // Allow hex colors, rgb, rgba, and named colors
+  return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(color) ||
+         /^rgb\(\d{1,3},\s*\d{1,3},\s*\d{1,3}\)$/.test(color) ||
+         /^[a-zA-Z]+$/.test(color);
+}
+
+function sanitizeString(str, maxLength = 500) {
+  if (!str || typeof str !== 'string') return '';
+  return validator.escape(str.slice(0, maxLength));
+}
+
+// ============================================
+// Password Hashing Utilities
+// ============================================
+
+async function hashPassword(password) {
+  return bcrypt.hash(password, BCRYPT_ROUNDS);
+}
+
+async function verifyPassword(password, hash) {
+  // Handle legacy plain-text passwords (migrate on first login)
+  if (!hash.startsWith('$2')) {
+    // Legacy plain-text password - verify and schedule migration
+    return password === hash;
+  }
+  return bcrypt.compare(password, hash);
+}
+
+async function migratePasswordIfNeeded(password) {
+  const currentHash = config.admin?.passwordHash || config.admin?.password;
+
+  // If using plain-text password, migrate to bcrypt
+  if (currentHash && !currentHash.startsWith('$2')) {
+    const newHash = await hashPassword(password);
+    config.admin.passwordHash = newHash;
+    delete config.admin.password; // Remove plain-text
+    saveConfig(config);
+    console.log('Admin password migrated to bcrypt hash');
+  }
+}
+
+// ============================================
+// Authentication Middleware
+// ============================================
+
+async function adminAuth(req, res, next) {
+  // Check if user has valid session
+  if (req.session?.isAdmin) {
+    return next();
+  }
+
+  const passwordHash = config.admin?.passwordHash || config.admin?.password;
 
   // If no password is set, allow access (for initial setup)
-  if (!adminPassword) {
+  if (!passwordHash) {
     return next();
   }
 
-  // Check for password in header or query
-  const providedPassword = req.headers['x-admin-password'] || req.query.password;
-
-  if (!providedPassword) {
-    return res.status(401).json({ error: 'Authentication required', needsAuth: true });
-  }
-
-  // Compare passwords (timing-safe comparison)
-  const providedHash = crypto.createHash('sha256').update(providedPassword).digest('hex');
-  const storedHash = crypto.createHash('sha256').update(adminPassword).digest('hex');
-
-  if (crypto.timingSafeEqual(Buffer.from(providedHash), Buffer.from(storedHash))) {
-    return next();
-  }
-
-  return res.status(403).json({ error: 'Invalid password' });
+  return res.status(401).json({
+    error: 'Authentication required',
+    needsAuth: true
+  });
 }
+
+// ============================================
+// Public API Routes
+// ============================================
 
 // Check if admin requires auth
 app.get('/api/admin/auth-required', (req, res) => {
   res.json({
-    required: !!config.admin?.password,
-    configured: !!config.weather?.apiKey
+    required: !!(config.admin?.passwordHash || config.admin?.password),
+    configured: !!config.weather?.apiKey,
+    isAuthenticated: !!req.session?.isAdmin
+  });
+});
+
+// Login endpoint
+app.post('/api/admin/login', loginLimiter, async (req, res) => {
+  try {
+    const { password } = req.body;
+
+    if (!password || typeof password !== 'string') {
+      return res.status(400).json({ error: 'Password is required' });
+    }
+
+    const storedHash = config.admin?.passwordHash || config.admin?.password;
+
+    if (!storedHash) {
+      // No password set, create session
+      req.session.isAdmin = true;
+      return res.json({ success: true });
+    }
+
+    const isValid = await verifyPassword(password, storedHash);
+
+    if (isValid) {
+      // Migrate plain-text password to bcrypt if needed
+      await migratePasswordIfNeeded(password);
+
+      // Regenerate session to prevent session fixation
+      req.session.regenerate((err) => {
+        if (err) {
+          console.error('Session regeneration error:', err);
+          return res.status(500).json({ error: 'Authentication failed' });
+        }
+        req.session.isAdmin = true;
+        res.json({ success: true });
+      });
+    } else {
+      // Delay response to prevent timing attacks
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      res.status(403).json({ error: 'Invalid password' });
+    }
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Authentication failed' });
+  }
+});
+
+// Logout endpoint
+app.post('/api/admin/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Logout error:', err);
+      return res.status(500).json({ error: 'Logout failed' });
+    }
+    res.clearCookie('calboard.sid');
+    res.json({ success: true });
   });
 });
 
 // Weather API endpoint
 app.get('/api/weather', async (req, res) => {
   try {
-    const { apiKey, latitude, longitude, units } = config.weather;
+    const { apiKey, latitude, longitude, units } = config.weather || {};
+
+    if (!apiKey) {
+      return res.status(503).json({ error: 'Weather not configured' });
+    }
 
     // Get current weather
     const currentUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=${units}&appid=${apiKey}`;
@@ -122,7 +347,7 @@ app.get('/api/weather', async (req, res) => {
     });
   } catch (err) {
     console.error('Weather API error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Weather data unavailable' });
   }
 });
 
@@ -140,7 +365,7 @@ function processForecast(forecastList) {
         temps: [],
         icons: [],
         iconCodes: [],
-        pop: [] // probability of precipitation
+        pop: []
       };
     }
 
@@ -150,7 +375,6 @@ function processForecast(forecastList) {
     daily[dayKey].pop.push(item.pop || 0);
   });
 
-  // Convert to array and calculate daily values
   return Object.values(daily).map(day => ({
     date: day.date,
     high: Math.round(Math.max(...day.temps)),
@@ -158,7 +382,7 @@ function processForecast(forecastList) {
     icon: getMostFrequent(day.icons),
     iconCode: getMostFrequent(day.iconCodes),
     pop: Math.round(Math.max(...day.pop) * 100)
-  })).slice(0, 5); // Next 5 days
+  })).slice(0, 5);
 }
 
 function getMostFrequent(arr) {
@@ -175,15 +399,21 @@ app.get('/api/calendars', async (req, res) => {
     const events = [];
     const daysToShow = config.display?.daysToShow || 7;
 
-    // Calculate date range
+    if (!config.calendars || config.calendars.length === 0) {
+      return res.json({ events: [], daysToShow });
+    }
+
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     const endDate = new Date(now);
     endDate.setDate(endDate.getDate() + daysToShow);
 
-    // Fetch all calendars in parallel
     const calendarPromises = config.calendars.map(async (cal) => {
       try {
+        if (!validateUrl(cal.url)) {
+          console.error(`Invalid calendar URL for ${cal.name}`);
+          return [];
+        }
         const response = await fetch(cal.url);
         const icsData = await response.text();
         const calEvents = parseICS(icsData, cal.name, cal.color, now, endDate);
@@ -197,10 +427,8 @@ app.get('/api/calendars', async (req, res) => {
     const results = await Promise.all(calendarPromises);
     results.forEach(calEvents => events.push(...calEvents));
 
-    // Sort by start time
     events.sort((a, b) => new Date(a.start) - new Date(b.start));
 
-    // Group by day
     const grouped = groupEventsByDay(events);
 
     res.json({
@@ -209,7 +437,7 @@ app.get('/api/calendars', async (req, res) => {
     });
   } catch (err) {
     console.error('Calendar API error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Calendar data unavailable' });
   }
 });
 
@@ -225,12 +453,11 @@ function parseICS(icsData, calendarName, color, startDate, endDate) {
     vevents.forEach(vevent => {
       const event = new ICAL.Event(vevent);
 
-      // Handle recurring events
       if (event.isRecurring()) {
         const iterator = event.iterator();
         let next;
         let count = 0;
-        const maxOccurrences = 100; // Limit iterations
+        const maxOccurrences = 100;
 
         while ((next = iterator.next()) && count < maxOccurrences) {
           count++;
@@ -249,7 +476,6 @@ function parseICS(icsData, calendarName, color, startDate, endDate) {
         const eventStart = event.startDate.toJSDate();
         const eventEnd = event.endDate ? event.endDate.toJSDate() : eventStart;
 
-        // Check if event is in range
         if (eventStart <= endDate && eventEnd >= startDate) {
           events.push(createEventObject(event, eventStart, eventEnd, calendarName, color));
         }
@@ -267,14 +493,14 @@ function createEventObject(event, start, end, calendarName, color) {
 
   return {
     id: event.uid + '_' + start.getTime(),
-    title: event.summary || 'Untitled Event',
+    title: sanitizeString(event.summary || 'Untitled Event', 200),
     start: start.toISOString(),
     end: end.toISOString(),
     allDay: isAllDay,
-    calendar: calendarName,
-    color: color,
-    location: event.location || null,
-    description: event.description || null
+    calendar: sanitizeString(calendarName, 100),
+    color: validateColor(color) ? color : '#4CAF50',
+    location: event.location ? sanitizeString(event.location, 200) : null,
+    description: null // Don't expose descriptions for privacy
   };
 }
 
@@ -302,53 +528,140 @@ function groupEventsByDay(events) {
 app.get('/api/config', (req, res) => {
   res.json({
     display: config.display,
-    calendarCount: config.calendars.length,
-    calendarNames: config.calendars.map(c => ({ name: c.name, color: c.color }))
+    calendarCount: config.calendars?.length || 0,
+    calendarNames: (config.calendars || []).map(c => ({
+      name: sanitizeString(c.name, 100),
+      color: validateColor(c.color) ? c.color : '#4CAF50'
+    }))
   });
 });
 
 // ============================================
-// Admin API Endpoints
+// Admin API Endpoints (Protected)
 // ============================================
 
-// Get full configuration (protected)
-app.get('/api/admin/config', adminAuth, (req, res) => {
-  // Return config with password masked
+// Get full configuration
+app.get('/api/admin/config', adminLimiter, adminAuth, (req, res) => {
   const safeConfig = JSON.parse(JSON.stringify(config));
+
+  // Mask sensitive data
+  if (safeConfig.admin?.passwordHash) {
+    safeConfig.admin.passwordHash = '********';
+  }
   if (safeConfig.admin?.password) {
     safeConfig.admin.password = '********';
   }
+  if (safeConfig.server?.sessionSecret) {
+    delete safeConfig.server.sessionSecret;
+  }
+
   res.json(safeConfig);
 });
 
-// Save configuration (protected)
-app.put('/api/admin/config', adminAuth, (req, res) => {
+// Save configuration
+app.put('/api/admin/config', adminLimiter, adminAuth, async (req, res) => {
   try {
     const newConfig = req.body;
 
-    // Validate required fields
-    if (!newConfig.weather || !newConfig.calendars || !newConfig.display || !newConfig.server) {
-      return res.status(400).json({ error: 'Invalid configuration structure' });
+    // Validate required structure
+    if (!newConfig || typeof newConfig !== 'object') {
+      return res.status(400).json({ error: 'Invalid configuration' });
     }
 
-    // If password is masked, keep the old one
-    if (newConfig.admin?.password === '********') {
-      newConfig.admin.password = config.admin?.password;
+    // Ensure required sections exist
+    if (!newConfig.weather || !newConfig.display || !newConfig.server) {
+      return res.status(400).json({ error: 'Missing required configuration sections' });
     }
 
-    // Save to file
+    // Validate weather config
+    if (newConfig.weather.latitude !== undefined && !validateLatitude(newConfig.weather.latitude)) {
+      return res.status(400).json({ error: 'Invalid latitude' });
+    }
+    if (newConfig.weather.longitude !== undefined && !validateLongitude(newConfig.weather.longitude)) {
+      return res.status(400).json({ error: 'Invalid longitude' });
+    }
+    if (newConfig.weather.units && !['imperial', 'metric'].includes(newConfig.weather.units)) {
+      return res.status(400).json({ error: 'Invalid units' });
+    }
+
+    // Validate calendars
+    if (newConfig.calendars) {
+      if (!Array.isArray(newConfig.calendars)) {
+        return res.status(400).json({ error: 'Calendars must be an array' });
+      }
+      for (const cal of newConfig.calendars) {
+        if (cal.url && !validateUrl(cal.url)) {
+          return res.status(400).json({ error: `Invalid URL for calendar: ${cal.name}` });
+        }
+        if (cal.color && !validateColor(cal.color)) {
+          cal.color = '#4CAF50'; // Default to green if invalid
+        }
+      }
+    }
+
+    // Validate display config
+    const display = newConfig.display;
+    if (display.daysToShow !== undefined) {
+      const days = parseInt(display.daysToShow);
+      if (isNaN(days) || days < 1 || days > 30) {
+        return res.status(400).json({ error: 'Days to show must be between 1 and 30' });
+      }
+      display.daysToShow = days;
+    }
+    if (display.refreshIntervalMinutes !== undefined) {
+      const interval = parseInt(display.refreshIntervalMinutes);
+      if (isNaN(interval) || interval < 1 || interval > 60) {
+        return res.status(400).json({ error: 'Refresh interval must be between 1 and 60 minutes' });
+      }
+      display.refreshIntervalMinutes = interval;
+    }
+
+    // Handle password changes
+    if (newConfig.admin) {
+      const newPassword = newConfig.admin.password;
+
+      if (newPassword && newPassword !== '********') {
+        // Validate password strength
+        if (newPassword.length < 8) {
+          return res.status(400).json({ error: 'Password must be at least 8 characters' });
+        }
+        // Hash new password
+        newConfig.admin.passwordHash = await hashPassword(newPassword);
+        delete newConfig.admin.password;
+      } else {
+        // Keep existing password hash
+        newConfig.admin.passwordHash = config.admin?.passwordHash;
+        delete newConfig.admin.password;
+      }
+    }
+
+    // Preserve session secret
+    if (config.server?.sessionSecret) {
+      newConfig.server.sessionSecret = config.server.sessionSecret;
+    }
+
+    // Validate port
+    if (newConfig.server.port !== undefined) {
+      const port = parseInt(newConfig.server.port);
+      if (isNaN(port) || port < 1 || port > 65535) {
+        return res.status(400).json({ error: 'Invalid port number' });
+      }
+      newConfig.server.port = port;
+    }
+
     if (saveConfig(newConfig)) {
       res.json({ success: true, message: 'Configuration saved' });
     } else {
       res.status(500).json({ error: 'Failed to save configuration' });
     }
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Config save error:', err);
+    res.status(500).json({ error: 'Failed to save configuration' });
   }
 });
 
-// Test calendar URL (protected)
-app.post('/api/admin/test-calendar', adminAuth, async (req, res) => {
+// Test calendar URL
+app.post('/api/admin/test-calendar', adminLimiter, adminAuth, async (req, res) => {
   try {
     const { url } = req.body;
 
@@ -356,14 +669,20 @@ app.post('/api/admin/test-calendar', adminAuth, async (req, res) => {
       return res.status(400).json({ error: 'URL is required' });
     }
 
-    const response = await fetch(url);
+    if (!validateUrl(url)) {
+      return res.status(400).json({ error: 'Invalid URL format' });
+    }
+
+    const response = await fetch(url, {
+      timeout: 10000 // 10 second timeout
+    });
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
     const icsData = await response.text();
 
-    // Try to parse it
     const jcalData = ICAL.parse(icsData);
     const comp = new ICAL.Component(jcalData);
     const vevents = comp.getAllSubcomponents('vevent');
@@ -381,17 +700,27 @@ app.post('/api/admin/test-calendar', adminAuth, async (req, res) => {
   }
 });
 
-// Test weather API (protected)
-app.post('/api/admin/test-weather', adminAuth, async (req, res) => {
+// Test weather API
+app.post('/api/admin/test-weather', adminLimiter, adminAuth, async (req, res) => {
   try {
     const { apiKey, latitude, longitude } = req.body;
 
-    if (!apiKey || latitude === undefined || longitude === undefined) {
-      return res.status(400).json({ error: 'API key, latitude, and longitude are required' });
+    if (!apiKey || typeof apiKey !== 'string') {
+      return res.status(400).json({ error: 'API key is required' });
+    }
+
+    if (!validateLatitude(latitude)) {
+      return res.status(400).json({ error: 'Invalid latitude' });
+    }
+
+    if (!validateLongitude(longitude)) {
+      return res.status(400).json({ error: 'Invalid longitude' });
     }
 
     const url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}`;
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      timeout: 10000
+    });
     const data = await response.json();
 
     if (data.cod && data.cod !== 200) {
@@ -412,8 +741,8 @@ app.post('/api/admin/test-weather', adminAuth, async (req, res) => {
   }
 });
 
-// Reload configuration from file (protected)
-app.post('/api/admin/reload', adminAuth, (req, res) => {
+// Reload configuration
+app.post('/api/admin/reload', adminLimiter, adminAuth, (req, res) => {
   if (loadConfig()) {
     res.json({ success: true, message: 'Configuration reloaded' });
   } else {
@@ -426,8 +755,33 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// Start server
+// ============================================
+// Error Handling
+// ============================================
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+// ============================================
+// Start Server
+// ============================================
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Calboard server running at http://localhost:${PORT}`);
   console.log(`Access from other devices: http://<your-pi-ip>:${PORT}`);
+  console.log('');
+  console.log('Security features enabled:');
+  console.log('  - Helmet security headers');
+  console.log('  - Rate limiting on API endpoints');
+  console.log('  - Session-based authentication');
+  console.log('  - Bcrypt password hashing');
+  console.log('  - Input validation');
 });

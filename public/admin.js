@@ -3,7 +3,6 @@
 class CalboardAdmin {
   constructor() {
     this.config = null;
-    this.password = null;
     this.unsavedChanges = false;
 
     this.init();
@@ -13,7 +12,7 @@ class CalboardAdmin {
     // Check if authentication is required
     const authStatus = await this.checkAuthRequired();
 
-    if (authStatus.required) {
+    if (authStatus.required && !authStatus.isAuthenticated) {
       this.showLoginModal();
     } else {
       await this.loadConfig();
@@ -24,11 +23,13 @@ class CalboardAdmin {
 
   async checkAuthRequired() {
     try {
-      const response = await fetch('/api/admin/auth-required');
+      const response = await fetch('/api/admin/auth-required', {
+        credentials: 'same-origin' // Include cookies
+      });
       return await response.json();
     } catch (err) {
       console.error('Failed to check auth status:', err);
-      return { required: false };
+      return { required: false, isAuthenticated: false };
     }
   }
 
@@ -41,46 +42,70 @@ class CalboardAdmin {
   }
 
   async login(password) {
-    this.password = password;
     try {
-      const response = await this.fetchWithAuth('/api/admin/config');
-      if (response.ok) {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ password })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         this.hideLoginModal();
         await this.loadConfig();
         return true;
       } else {
-        const data = await response.json();
         throw new Error(data.error || 'Login failed');
       }
     } catch (err) {
-      this.password = null;
       throw err;
     }
   }
 
-  async fetchWithAuth(url, options = {}) {
-    const headers = options.headers || {};
-    if (this.password) {
-      headers['X-Admin-Password'] = this.password;
+  async logout() {
+    try {
+      await fetch('/api/admin/logout', {
+        method: 'POST',
+        credentials: 'same-origin'
+      });
+      window.location.href = '/';
+    } catch (err) {
+      console.error('Logout error:', err);
     }
-    return fetch(url, { ...options, headers });
+  }
+
+  async fetchWithAuth(url, options = {}) {
+    // Always include credentials for session cookies
+    options.credentials = 'same-origin';
+
+    const response = await fetch(url, options);
+
+    // If we get a 401, redirect to login
+    if (response.status === 401) {
+      this.showLoginModal();
+      throw new Error('Session expired. Please login again.');
+    }
+
+    return response;
   }
 
   async loadConfig() {
     try {
       const response = await this.fetchWithAuth('/api/admin/config');
       if (!response.ok) {
-        if (response.status === 401) {
-          this.showLoginModal();
-          return;
-        }
         throw new Error('Failed to load configuration');
       }
       this.config = await response.json();
       this.populateForm();
       this.unsavedChanges = false;
     } catch (err) {
-      this.showStatus('error', 'Failed to load configuration: ' + err.message);
+      if (err.message !== 'Session expired. Please login again.') {
+        this.showStatus('error', 'Failed to load configuration: ' + err.message);
+      }
     }
   }
 
@@ -101,8 +126,15 @@ class CalboardAdmin {
     // Server settings
     document.getElementById('server-port').value = this.config.server?.port || 3000;
 
-    // Admin settings
-    document.getElementById('admin-password').value = this.config.admin?.password || '';
+    // Admin settings - show placeholder if password is set
+    const passwordField = document.getElementById('admin-password');
+    if (this.config.admin?.passwordHash === '********' || this.config.admin?.password === '********') {
+      passwordField.value = '********';
+      passwordField.placeholder = 'Password is set (enter new to change)';
+    } else {
+      passwordField.value = '';
+      passwordField.placeholder = 'Set a password (min 8 characters)';
+    }
 
     // Calendars
     this.renderCalendars();
@@ -137,6 +169,11 @@ class CalboardAdmin {
       e.preventDefault();
       const password = document.getElementById('login-password').value;
       const errorEl = document.getElementById('login-error');
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+
+      // Disable button during login
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Logging in...';
 
       try {
         await this.login(password);
@@ -144,6 +181,9 @@ class CalboardAdmin {
       } catch (err) {
         errorEl.textContent = err.message;
         errorEl.classList.add('visible');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Login';
       }
     });
 
@@ -184,6 +224,20 @@ class CalboardAdmin {
       if (this.unsavedChanges) {
         e.preventDefault();
         e.returnValue = '';
+      }
+    });
+
+    // Clear password placeholder on focus
+    document.getElementById('admin-password').addEventListener('focus', function() {
+      if (this.value === '********') {
+        this.value = '';
+      }
+    });
+
+    // Restore placeholder if empty on blur
+    document.getElementById('admin-password').addEventListener('blur', function() {
+      if (this.value === '' && this.placeholder.includes('Password is set')) {
+        this.value = '********';
       }
     });
   }
@@ -281,15 +335,17 @@ class CalboardAdmin {
     const calendars = [];
     document.querySelectorAll('.calendar-item').forEach(item => {
       calendars.push({
-        name: item.querySelector('.calendar-name-input').value,
-        url: item.querySelector('.calendar-url-input').value,
+        name: item.querySelector('.calendar-name-input').value.trim(),
+        url: item.querySelector('.calendar-url-input').value.trim(),
         color: item.querySelector('.calendar-color-input').value
       });
     });
 
+    const passwordValue = document.getElementById('admin-password').value;
+
     return {
       weather: {
-        apiKey: document.getElementById('weather-api-key').value,
+        apiKey: document.getElementById('weather-api-key').value.trim(),
         latitude: parseFloat(document.getElementById('weather-lat').value) || 0,
         longitude: parseFloat(document.getElementById('weather-lon').value) || 0,
         units: document.getElementById('weather-units').value
@@ -300,20 +356,29 @@ class CalboardAdmin {
         refreshIntervalMinutes: parseInt(document.getElementById('display-refresh').value) || 5,
         timeFormat: document.getElementById('display-time-format').value,
         dateFormat: document.getElementById('display-date-format').value,
-        backgroundImage: document.getElementById('display-background').value || null
+        backgroundImage: document.getElementById('display-background').value.trim() || null
       },
       server: {
         port: parseInt(document.getElementById('server-port').value) || 3000
       },
       admin: {
-        password: document.getElementById('admin-password').value || null
+        password: passwordValue || null
       }
     };
   }
 
   async saveConfig() {
+    const saveBtn = document.getElementById('save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+
     try {
       const newConfig = this.collectFormData();
+
+      // Client-side validation
+      if (newConfig.admin.password && newConfig.admin.password !== '********' && newConfig.admin.password.length < 8) {
+        throw new Error('Password must be at least 8 characters');
+      }
 
       const response = await this.fetchWithAuth('/api/admin/config', {
         method: 'PUT',
@@ -326,20 +391,19 @@ class CalboardAdmin {
       const data = await response.json();
 
       if (response.ok) {
-        this.config = newConfig;
         this.unsavedChanges = false;
         this.showStatus('success', 'Configuration saved successfully!');
 
-        // Update password if changed
-        const newPassword = document.getElementById('admin-password').value;
-        if (newPassword && newPassword !== '********') {
-          this.password = newPassword;
-        }
+        // Reload config to get updated state
+        await this.loadConfig();
       } else {
         throw new Error(data.error || 'Failed to save');
       }
     } catch (err) {
-      this.showStatus('error', 'Failed to save configuration: ' + err.message);
+      this.showStatus('error', 'Failed to save: ' + err.message);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Changes';
     }
   }
 
@@ -368,8 +432,11 @@ class CalboardAdmin {
 
   async testWeather() {
     const resultEl = document.getElementById('weather-test-result');
+    const testBtn = document.getElementById('test-weather-btn');
+
     resultEl.textContent = 'Testing...';
     resultEl.className = 'test-result';
+    testBtn.disabled = true;
 
     try {
       const response = await this.fetchWithAuth('/api/admin/test-weather', {
@@ -378,7 +445,7 @@ class CalboardAdmin {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          apiKey: document.getElementById('weather-api-key').value,
+          apiKey: document.getElementById('weather-api-key').value.trim(),
           latitude: parseFloat(document.getElementById('weather-lat').value),
           longitude: parseFloat(document.getElementById('weather-lon').value)
         })
@@ -396,20 +463,25 @@ class CalboardAdmin {
     } catch (err) {
       resultEl.textContent = 'Error: ' + err.message;
       resultEl.className = 'test-result error';
+    } finally {
+      testBtn.disabled = false;
     }
   }
 
   async testCalendar(index) {
     const item = document.querySelector(`.calendar-item[data-index="${index}"]`);
     const resultEl = item.querySelector('.calendar-test-result');
-    const url = item.querySelector('.calendar-url-input').value;
+    const testBtn = item.querySelector('.test-calendar-btn');
+    const url = item.querySelector('.calendar-url-input').value.trim();
 
     resultEl.textContent = 'Testing...';
     resultEl.className = 'test-result';
+    testBtn.disabled = true;
 
     if (!url) {
       resultEl.textContent = 'Please enter a URL';
       resultEl.className = 'test-result error';
+      testBtn.disabled = false;
       return;
     }
 
@@ -434,6 +506,8 @@ class CalboardAdmin {
     } catch (err) {
       resultEl.textContent = 'Error: ' + err.message;
       resultEl.className = 'test-result error';
+    } finally {
+      testBtn.disabled = false;
     }
   }
 

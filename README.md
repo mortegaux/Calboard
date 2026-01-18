@@ -182,19 +182,13 @@ Navigate to `http://<your-pi-ip>:3000/admin` from any device on your network.
 
 By default, the admin panel is accessible without a password. To add protection:
 
-1. Go to the admin panel
+1. Go to the admin panel (`/admin`)
 2. Scroll to "Admin Security"
-3. Enter a password and save
+3. Enter a password (minimum 8 characters) and save
 
-Or add to `config.json`:
+The password will be automatically hashed with bcrypt for secure storage. Sessions last 24 hours and use secure HTTP-only cookies.
 
-```json
-"admin": {
-  "password": "your-secret-password"
-}
-```
-
-Once set, you'll need to enter the password to access the admin panel.
+**Important:** Set a password immediately after initial setup to protect your configuration.
 
 ## Raspberry Pi Setup
 
@@ -287,6 +281,77 @@ Calendar colors can be any valid CSS color:
 - Hex: `"#4CAF50"`
 - RGB: `"rgb(76, 175, 80)"`
 - Named: `"green"`
+
+## Security
+
+Calboard includes multiple security features to protect your dashboard.
+
+### Built-in Security Features
+
+| Feature | Description |
+|---------|-------------|
+| **Helmet.js** | Security headers (CSP, HSTS, X-Frame-Options, etc.) |
+| **Rate Limiting** | Prevents brute force attacks (5 login attempts per 15 min) |
+| **Bcrypt Hashing** | Passwords are hashed with bcrypt (12 rounds) |
+| **Session Management** | Secure HTTP-only cookies with CSRF protection |
+| **Input Validation** | All inputs are validated and sanitized |
+| **Request Size Limits** | Body parsing limited to 100KB |
+
+### Setting Up HTTPS (Recommended for Production)
+
+For production use, especially if accessible over the internet, use HTTPS:
+
+**Option 1: Reverse Proxy with Nginx**
+
+```bash
+sudo apt-get install nginx certbot python3-certbot-nginx
+```
+
+Create `/etc/nginx/sites-available/calboard`:
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+Enable SSL:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/calboard /etc/nginx/sites-enabled/
+sudo certbot --nginx -d your-domain.com
+```
+
+**Option 2: Local Network Only**
+
+If running on a local network only, ensure your router firewall blocks external access to the Pi's port.
+
+### Password Requirements
+
+- Minimum 8 characters
+- Passwords are automatically migrated to bcrypt if set via plain text
+- Session expires after 24 hours of inactivity
+
+### Security Best Practices
+
+1. **Set an admin password** - Protect the admin panel immediately after setup
+2. **Use HTTPS** - Especially if accessing over the internet
+3. **Keep Node.js updated** - Run `npm audit` periodically
+4. **Restrict network access** - Use firewall rules to limit access to trusted devices
+5. **Don't expose to internet** - If possible, keep the dashboard on your local network only
 
 ## Troubleshooting
 
