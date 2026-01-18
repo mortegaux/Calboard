@@ -14,6 +14,7 @@ A beautiful calendar and weather dashboard designed for Raspberry Pi displays. S
 - **Responsive Design** - Works on various screen sizes
 - **Kiosk Mode** - Double-click to enter fullscreen mode with hidden cursor
 - **Customizable** - Background images, time format, and more
+- **Web Admin Interface** - Configure everything remotely via browser at `/admin`
 
 ## Requirements
 
@@ -70,9 +71,14 @@ Edit `config.json` with your settings:
   },
   "server": {
     "port": 3000
+  },
+  "admin": {
+    "password": null
   }
 }
 ```
+
+**Tip:** You can also configure everything via the web interface at `/admin` after starting the server.
 
 ### 4. Start the server
 
@@ -155,6 +161,40 @@ Add multiple calendars with different colors:
 | `backgroundImage` | Path to background image | `null` |
 | `dateFormat` | Locale for date formatting | `"en-US"` |
 | `timeFormat` | `"12h"` or `"24h"` | `"12h"` |
+
+## Web Admin Interface
+
+Calboard includes a web-based configuration interface for managing settings remotely.
+
+### Accessing the Admin Panel
+
+Navigate to `http://<your-pi-ip>:3000/admin` from any device on your network.
+
+### Features
+
+- **Weather Settings** - Configure API key, location coordinates, and units
+- **Calendar Management** - Add, edit, or remove calendars with color pickers
+- **Display Settings** - Adjust refresh intervals, date/time formats, and backgrounds
+- **Test Connections** - Verify calendar URLs and weather API before saving
+- **Password Protection** - Optional authentication to secure the admin panel
+
+### Securing the Admin Panel
+
+By default, the admin panel is accessible without a password. To add protection:
+
+1. Go to the admin panel
+2. Scroll to "Admin Security"
+3. Enter a password and save
+
+Or add to `config.json`:
+
+```json
+"admin": {
+  "password": "your-secret-password"
+}
+```
+
+Once set, you'll need to enter the password to access the admin panel.
 
 ## Raspberry Pi Setup
 

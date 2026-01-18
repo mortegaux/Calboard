@@ -31,5 +31,8 @@
   },
   "server": {
     "port": 3000
+  },
+  "admin": {
+    "password": null
   }
 }
