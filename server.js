@@ -9,6 +9,7 @@ const rateLimit = require('express-rate-limit');
 const session = require('express-session');
 const bcrypt = require('bcrypt');
 const validator = require('validator');
+const RSSParser = require('rss-parser');
 
 const app = express();
 
@@ -29,6 +30,9 @@ const DEFAULT_CONFIG = {
     units: 'imperial',
     showAlerts: true,
     showAirQuality: true,
+    showUvIndex: true,
+    showMoonPhase: true,
+    showPollenForecast: false,
     additionalLocations: []
   },
   calendars: [],
@@ -47,7 +51,12 @@ const DEFAULT_CONFIG = {
     showEventCountdown: true,
     showTodayBadge: true,
     calendarView: 'list',
-    hiddenCalendars: []
+    hiddenCalendars: [],
+    layout: 'default',
+    screensaverEnabled: true,
+    screensaverStart: '22:00',
+    screensaverEnd: '07:00',
+    screensaverDimLevel: 20
   },
   server: {
     port: 3000
@@ -60,7 +69,159 @@ const DEFAULT_CONFIG = {
     offlineMode: true,
     birthdayRecognition: true,
     voiceAnnouncements: false,
-    touchGestures: true
+    touchGestures: true,
+    multiPage: true
+  },
+  // Phase 1: Information Widgets
+  widgets: {
+    news: {
+      enabled: false,
+      feeds: [],
+      maxItems: 5,
+      refreshMinutes: 30
+    },
+    quotes: {
+      enabled: true,
+      category: 'inspirational',
+      refreshHours: 24
+    },
+    wordOfDay: {
+      enabled: false
+    },
+    jokeOfDay: {
+      enabled: false
+    },
+    onThisDay: {
+      enabled: false
+    },
+    // Phase 2: Environment
+    moonPhase: {
+      enabled: true
+    },
+    tides: {
+      enabled: false,
+      stationId: ''
+    },
+    pollen: {
+      enabled: false
+    },
+    uvIndex: {
+      enabled: true
+    },
+    // Phase 3: Productivity
+    tasks: {
+      enabled: false,
+      provider: 'local',
+      todoistApiKey: '',
+      lists: []
+    },
+    groceryList: {
+      enabled: false,
+      items: []
+    },
+    chores: {
+      enabled: false,
+      members: [],
+      tasks: []
+    },
+    packages: {
+      enabled: false,
+      trackingNumbers: []
+    },
+    medications: {
+      enabled: false,
+      reminders: []
+    },
+    // Phase 4: Transportation
+    traffic: {
+      enabled: false,
+      googleMapsApiKey: '',
+      routes: []
+    },
+    transit: {
+      enabled: false,
+      stops: []
+    },
+    flights: {
+      enabled: false,
+      tracking: []
+    },
+    gasPrices: {
+      enabled: false,
+      zipCode: ''
+    },
+    // Phase 5: Finance
+    stocks: {
+      enabled: false,
+      symbols: [],
+      apiKey: ''
+    },
+    crypto: {
+      enabled: false,
+      coins: ['bitcoin', 'ethereum']
+    },
+    // Phase 6: Sports & Entertainment
+    sports: {
+      enabled: false,
+      teams: [],
+      leagues: []
+    },
+    spotify: {
+      enabled: false,
+      clientId: '',
+      clientSecret: '',
+      refreshToken: ''
+    },
+    tvSchedule: {
+      enabled: false,
+      shows: []
+    },
+    // Phase 7: Media
+    photos: {
+      enabled: false,
+      provider: 'local',
+      googlePhotosAlbumId: '',
+      unsplashCollection: '',
+      localFolder: '/backgrounds'
+    },
+    photoFrame: {
+      enabled: false,
+      interval: 60,
+      showClock: true,
+      showWeather: true
+    },
+    // Phase 8: Smart Home
+    homeAssistant: {
+      enabled: false,
+      url: '',
+      token: '',
+      entities: []
+    },
+    energy: {
+      enabled: false,
+      provider: ''
+    },
+    // Phase 9: Social
+    messageBoard: {
+      enabled: false,
+      messages: []
+    },
+    sharedLists: {
+      enabled: false,
+      lists: []
+    },
+    familyProfiles: {
+      enabled: false,
+      profiles: []
+    },
+    // Phase 10: Advanced
+    systemStats: {
+      enabled: false,
+      showCpu: true,
+      showMemory: true,
+      showTemp: true,
+      showNetwork: false
+    }
   },
   integrations: {
     homeAssistant: {
@@ -79,6 +240,21 @@ const DEFAULT_CONFIG = {
     reduceMotion: false
   },
   setupComplete: false
+};
+
+// RSS Parser instance
+const rssParser = new RSSParser();
+
+// Cache for widget data (to reduce API calls)
+const widgetCache = {
+  news: { data: null, timestamp: 0 },
+  quote: { data: null, timestamp: 0 },
+  wordOfDay: { data: null, timestamp: 0 },
+  joke: { data: null, timestamp: 0 },
+  onThisDay: { data: null, timestamp: 0 },
+  stocks: { data: null, timestamp: 0 },
+  crypto: { data: null, timestamp: 0 },
+  sports: { data: null, timestamp: 0 }
 };
 
 function loadConfig() {
@@ -907,12 +1083,1194 @@ app.get('/api/admin/qrcode', adminAuth, (req, res) => {
   const protocol = req.secure ? 'https' : 'http';
   const adminUrl = `${protocol}://${host}/admin`;
 
-  // Generate simple QR code data URL using a basic approach
-  // For production, you'd use a library like 'qrcode'
   res.json({
     url: adminUrl,
     message: 'Scan to access admin panel'
   });
+});
+
+// ============================================
+// Widget API Endpoints
+// ============================================
+
+// Built-in quotes database
+const QUOTES_DB = [
+  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+  { text: "Innovation distinguishes between a leader and a follower.", author: "Steve Jobs" },
+  { text: "Stay hungry, stay foolish.", author: "Steve Jobs" },
+  { text: "Life is what happens when you're busy making other plans.", author: "John Lennon" },
+  { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
+  { text: "It is during our darkest moments that we must focus to see the light.", author: "Aristotle" },
+  { text: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+  { text: "Your time is limited, don't waste it living someone else's life.", author: "Steve Jobs" },
+  { text: "If you want to lift yourself up, lift up someone else.", author: "Booker T. Washington" },
+  { text: "The only impossible journey is the one you never begin.", author: "Tony Robbins" },
+  { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+  { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+  { text: "The only thing we have to fear is fear itself.", author: "Franklin D. Roosevelt" },
+  { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
+  { text: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+  { text: "The best way to predict the future is to create it.", author: "Peter Drucker" },
+  { text: "What you get by achieving your goals is not as important as what you become.", author: "Zig Ziglar" },
+  { text: "The mind is everything. What you think you become.", author: "Buddha" },
+  { text: "Strive not to be a success, but rather to be of value.", author: "Albert Einstein" },
+  { text: "Two roads diverged in a wood, and I took the one less traveled by.", author: "Robert Frost" },
+  { text: "The journey of a thousand miles begins with one step.", author: "Lao Tzu" },
+  { text: "That which does not kill us makes us stronger.", author: "Friedrich Nietzsche" },
+  { text: "Be yourself; everyone else is already taken.", author: "Oscar Wilde" },
+  { text: "To be yourself in a world that is constantly trying to make you something else is the greatest accomplishment.", author: "Ralph Waldo Emerson" },
+  { text: "Happiness is not something ready made. It comes from your own actions.", author: "Dalai Lama" },
+  { text: "The only true wisdom is in knowing you know nothing.", author: "Socrates" },
+  { text: "Do what you can, with what you have, where you are.", author: "Theodore Roosevelt" },
+  { text: "Everything you've ever wanted is on the other side of fear.", author: "George Addair" },
+  { text: "Life shrinks or expands in proportion to one's courage.", author: "Anais Nin" },
+  { text: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford" }
+];
+
+// Built-in words database
+const WORDS_DB = [
+  { word: "Serendipity", definition: "The occurrence of events by chance in a happy way", partOfSpeech: "noun", example: "Finding that rare book was pure serendipity." },
+  { word: "Ephemeral", definition: "Lasting for a very short time", partOfSpeech: "adjective", example: "The ephemeral beauty of cherry blossoms." },
+  { word: "Eloquent", definition: "Fluent or persuasive in speaking or writing", partOfSpeech: "adjective", example: "She gave an eloquent speech." },
+  { word: "Ubiquitous", definition: "Present, appearing, or found everywhere", partOfSpeech: "adjective", example: "Smartphones have become ubiquitous." },
+  { word: "Resilience", definition: "The capacity to recover quickly from difficulties", partOfSpeech: "noun", example: "Her resilience after the setback was inspiring." },
+  { word: "Mellifluous", definition: "Sweet-sounding; pleasant to hear", partOfSpeech: "adjective", example: "The mellifluous tones of the violin." },
+  { word: "Quintessential", definition: "Representing the most perfect example of a quality", partOfSpeech: "adjective", example: "He was the quintessential gentleman." },
+  { word: "Sanguine", definition: "Optimistic or positive, especially in a difficult situation", partOfSpeech: "adjective", example: "She remained sanguine about her chances." },
+  { word: "Ineffable", definition: "Too great or extreme to be expressed in words", partOfSpeech: "adjective", example: "The ineffable beauty of the sunset." },
+  { word: "Perspicacious", definition: "Having a ready insight into things; shrewd", partOfSpeech: "adjective", example: "A perspicacious analysis of the situation." },
+  { word: "Luminous", definition: "Full of or shedding light; bright or shining", partOfSpeech: "adjective", example: "Her luminous smile lit up the room." },
+  { word: "Panacea", definition: "A solution or remedy for all difficulties or diseases", partOfSpeech: "noun", example: "There is no panacea for economic problems." },
+  { word: "Ethereal", definition: "Extremely delicate and light; heavenly", partOfSpeech: "adjective", example: "The ethereal beauty of the aurora borealis." },
+  { word: "Magnanimous", definition: "Very generous or forgiving, especially toward rivals", partOfSpeech: "adjective", example: "A magnanimous gesture of forgiveness." },
+  { word: "Zenith", definition: "The highest point reached; the peak", partOfSpeech: "noun", example: "At the zenith of her career." }
+];
+
+// Built-in jokes database
+const JOKES_DB = [
+  { setup: "Why don't scientists trust atoms?", punchline: "Because they make up everything!" },
+  { setup: "Why did the scarecrow win an award?", punchline: "Because he was outstanding in his field!" },
+  { setup: "Why don't eggs tell jokes?", punchline: "They'd crack each other up!" },
+  { setup: "What do you call a fake noodle?", punchline: "An impasta!" },
+  { setup: "Why did the coffee file a police report?", punchline: "It got mugged!" },
+  { setup: "What do you call a bear with no teeth?", punchline: "A gummy bear!" },
+  { setup: "Why can't you give Elsa a balloon?", punchline: "Because she will let it go!" },
+  { setup: "What did the ocean say to the beach?", punchline: "Nothing, it just waved." },
+  { setup: "Why do programmers prefer dark mode?", punchline: "Because light attracts bugs!" },
+  { setup: "Why was the math book sad?", punchline: "Because it had too many problems." },
+  { setup: "What do you call a fish without eyes?", punchline: "A fsh!" },
+  { setup: "Why did the bicycle fall over?", punchline: "Because it was two-tired!" },
+  { setup: "What do you call a lazy kangaroo?", punchline: "A pouch potato!" },
+  { setup: "Why don't skeletons fight each other?", punchline: "They don't have the guts!" },
+  { setup: "What did one wall say to the other wall?", punchline: "I'll meet you at the corner!" }
+];
+
+// Get quote of the day
+app.get('/api/widgets/quote', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.quotes?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    // Use date as seed for consistent daily quote
+    const today = new Date().toISOString().split('T')[0];
+    const seed = today.split('-').reduce((a, b) => a + parseInt(b), 0);
+    const quote = QUOTES_DB[seed % QUOTES_DB.length];
+
+    res.json({
+      enabled: true,
+      quote: quote.text,
+      author: quote.author,
+      date: today
+    });
+  } catch (err) {
+    console.error('Quote API error:', err);
+    res.status(500).json({ error: 'Quote unavailable' });
+  }
+});
+
+// Get word of the day
+app.get('/api/widgets/word', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.wordOfDay?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const seed = today.split('-').reduce((a, b) => a + parseInt(b), 0);
+    const word = WORDS_DB[seed % WORDS_DB.length];
+
+    res.json({
+      enabled: true,
+      word: word.word,
+      definition: word.definition,
+      partOfSpeech: word.partOfSpeech,
+      example: word.example,
+      date: today
+    });
+  } catch (err) {
+    console.error('Word API error:', err);
+    res.status(500).json({ error: 'Word unavailable' });
+  }
+});
+
+// Get joke of the day
+app.get('/api/widgets/joke', async (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.jokeOfDay?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    // Try external API first, fallback to built-in
+    try {
+      const response = await fetch('https://official-joke-api.appspot.com/random_joke', { timeout: 5000 });
+      if (response.ok) {
+        const data = await response.json();
+        return res.json({
+          enabled: true,
+          setup: data.setup,
+          punchline: data.punchline,
+          source: 'api'
+        });
+      }
+    } catch (apiErr) {
+      // Fallback to built-in
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const seed = today.split('-').reduce((a, b) => a + parseInt(b), 0);
+    const joke = JOKES_DB[seed % JOKES_DB.length];
+
+    res.json({
+      enabled: true,
+      setup: joke.setup,
+      punchline: joke.punchline,
+      source: 'local'
+    });
+  } catch (err) {
+    console.error('Joke API error:', err);
+    res.status(500).json({ error: 'Joke unavailable' });
+  }
+});
+
+// Get "On This Day" historical events
+app.get('/api/widgets/onthisday', async (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.onThisDay?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+
+    // Try Wikipedia API
+    try {
+      const url = `https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${month}/${day}`;
+      const response = await fetch(url, {
+        timeout: 10000,
+        headers: { 'User-Agent': 'Calboard/2.0' }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const events = (data.events || []).slice(0, 5).map(e => ({
+          year: e.year,
+          text: e.text,
+          pages: e.pages?.slice(0, 1).map(p => ({ title: p.title, thumbnail: p.thumbnail?.source }))
+        }));
+
+        return res.json({
+          enabled: true,
+          date: `${month}/${day}`,
+          events: events
+        });
+      }
+    } catch (apiErr) {
+      console.log('Wikipedia API error:', apiErr.message);
+    }
+
+    res.json({
+      enabled: true,
+      date: `${month}/${day}`,
+      events: []
+    });
+  } catch (err) {
+    console.error('On This Day API error:', err);
+    res.status(500).json({ error: 'Historical data unavailable' });
+  }
+});
+
+// Get news from RSS feeds
+app.get('/api/widgets/news', async (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.news?.enabled || !widgets.news.feeds?.length) {
+      return res.json({ enabled: false, items: [] });
+    }
+
+    const maxItems = widgets.news.maxItems || 5;
+    const cacheTime = (widgets.news.refreshMinutes || 30) * 60 * 1000;
+
+    // Check cache
+    if (widgetCache.news.data && Date.now() - widgetCache.news.timestamp < cacheTime) {
+      return res.json({ enabled: true, items: widgetCache.news.data, cached: true });
+    }
+
+    const allItems = [];
+
+    for (const feedUrl of widgets.news.feeds) {
+      try {
+        const feed = await rssParser.parseURL(feedUrl);
+        const items = (feed.items || []).slice(0, 10).map(item => ({
+          title: sanitizeString(item.title, 200),
+          link: item.link,
+          pubDate: item.pubDate,
+          source: feed.title || 'News',
+          description: sanitizeString(item.contentSnippet || item.description || '', 300)
+        }));
+        allItems.push(...items);
+      } catch (feedErr) {
+        console.error(`RSS feed error for ${feedUrl}:`, feedErr.message);
+      }
+    }
+
+    // Sort by date and limit
+    allItems.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+    const items = allItems.slice(0, maxItems);
+
+    // Update cache
+    widgetCache.news.data = items;
+    widgetCache.news.timestamp = Date.now();
+
+    res.json({ enabled: true, items: items });
+  } catch (err) {
+    console.error('News API error:', err);
+    res.status(500).json({ error: 'News unavailable' });
+  }
+});
+
+// ============================================
+// Phase 2: Environment Widgets
+// ============================================
+
+// Calculate moon phase
+function getMoonPhase(date = new Date()) {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+
+  let c, e, jd, b;
+
+  if (month < 3) {
+    year--;
+    month += 12;
+  }
+
+  ++month;
+  c = 365.25 * year;
+  e = 30.6 * month;
+  jd = c + e + day - 694039.09;
+  jd /= 29.5305882;
+  b = parseInt(jd);
+  jd -= b;
+  b = Math.round(jd * 8);
+
+  if (b >= 8) b = 0;
+
+  const phases = [
+    { name: 'New Moon', icon: '🌑', illumination: 0 },
+    { name: 'Waxing Crescent', icon: '🌒', illumination: 25 },
+    { name: 'First Quarter', icon: '🌓', illumination: 50 },
+    { name: 'Waxing Gibbous', icon: '🌔', illumination: 75 },
+    { name: 'Full Moon', icon: '🌕', illumination: 100 },
+    { name: 'Waning Gibbous', icon: '🌖', illumination: 75 },
+    { name: 'Last Quarter', icon: '🌗', illumination: 50 },
+    { name: 'Waning Crescent', icon: '🌘', illumination: 25 }
+  ];
+
+  return phases[b];
+}
+
+app.get('/api/widgets/moon', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.moonPhase?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    const phase = getMoonPhase();
+    res.json({
+      enabled: true,
+      phase: phase.name,
+      icon: phase.icon,
+      illumination: phase.illumination
+    });
+  } catch (err) {
+    console.error('Moon phase error:', err);
+    res.status(500).json({ error: 'Moon phase unavailable' });
+  }
+});
+
+// Get UV Index (uses OpenWeatherMap UV API)
+app.get('/api/widgets/uv', async (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.uvIndex?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    const { apiKey, latitude, longitude } = config.weather || {};
+    if (!apiKey) {
+      return res.json({ enabled: false, error: 'Weather API not configured' });
+    }
+
+    const url = `https://api.openweathermap.org/data/2.5/uvi?lat=${latitude}&lon=${longitude}&appid=${apiKey}`;
+    const response = await fetch(url, { timeout: 10000 });
+    const data = await response.json();
+
+    const uvIndex = Math.round(data.value || 0);
+    let level, color, advice;
+
+    if (uvIndex <= 2) {
+      level = 'Low';
+      color = '#4CAF50';
+      advice = 'No protection needed';
+    } else if (uvIndex <= 5) {
+      level = 'Moderate';
+      color = '#FFEB3B';
+      advice = 'Wear sunscreen';
+    } else if (uvIndex <= 7) {
+      level = 'High';
+      color = '#FF9800';
+      advice = 'Reduce sun exposure';
+    } else if (uvIndex <= 10) {
+      level = 'Very High';
+      color = '#f44336';
+      advice = 'Extra protection needed';
+    } else {
+      level = 'Extreme';
+      color = '#9C27B0';
+      advice = 'Avoid sun exposure';
+    }
+
+    res.json({
+      enabled: true,
+      index: uvIndex,
+      level: level,
+      color: color,
+      advice: advice
+    });
+  } catch (err) {
+    console.error('UV Index error:', err);
+    res.status(500).json({ error: 'UV data unavailable' });
+  }
+});
+
+// Get tide information (NOAA Tides API)
+app.get('/api/widgets/tides', async (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.tides?.enabled || !widgets.tides.stationId) {
+      return res.json({ enabled: false });
+    }
+
+    const stationId = widgets.tides.stationId;
+    const today = new Date();
+    const beginDate = today.toISOString().split('T')[0].replace(/-/g, '');
+    const endDate = new Date(today.getTime() + 86400000).toISOString().split('T')[0].replace(/-/g, '');
+
+    const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?begin_date=${beginDate}&end_date=${endDate}&station=${stationId}&product=predictions&datum=MLLW&time_zone=lst_ldt&units=english&format=json&interval=hilo`;
+
+    const response = await fetch(url, { timeout: 10000 });
+    const data = await response.json();
+
+    const predictions = (data.predictions || []).map(p => ({
+      time: p.t,
+      height: parseFloat(p.v).toFixed(1),
+      type: p.type === 'H' ? 'High' : 'Low'
+    }));
+
+    res.json({
+      enabled: true,
+      stationId: stationId,
+      predictions: predictions.slice(0, 4)
+    });
+  } catch (err) {
+    console.error('Tides error:', err);
+    res.status(500).json({ error: 'Tide data unavailable' });
+  }
+});
+
+// ============================================
+// Phase 3: Productivity Widgets
+// ============================================
+
+// Local tasks/todo list
+app.get('/api/widgets/tasks', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.tasks?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    res.json({
+      enabled: true,
+      provider: widgets.tasks.provider || 'local',
+      lists: widgets.tasks.lists || []
+    });
+  } catch (err) {
+    console.error('Tasks error:', err);
+    res.status(500).json({ error: 'Tasks unavailable' });
+  }
+});
+
+// Add task
+app.post('/api/widgets/tasks', adminAuth, (req, res) => {
+  try {
+    const { listName, task } = req.body;
+    if (!config.widgets) config.widgets = { ...DEFAULT_CONFIG.widgets };
+    if (!config.widgets.tasks) config.widgets.tasks = { enabled: true, provider: 'local', lists: [] };
+
+    let list = config.widgets.tasks.lists.find(l => l.name === listName);
+    if (!list) {
+      list = { name: listName || 'Tasks', items: [] };
+      config.widgets.tasks.lists.push(list);
+    }
+
+    list.items.push({
+      id: Date.now().toString(),
+      text: sanitizeString(task, 200),
+      completed: false,
+      createdAt: new Date().toISOString()
+    });
+
+    saveConfig(config);
+    res.json({ success: true, lists: config.widgets.tasks.lists });
+  } catch (err) {
+    console.error('Add task error:', err);
+    res.status(500).json({ error: 'Failed to add task' });
+  }
+});
+
+// Update task
+app.put('/api/widgets/tasks/:id', adminAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+    const { completed, text } = req.body;
+
+    if (!config.widgets?.tasks?.lists) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    for (const list of config.widgets.tasks.lists) {
+      const task = list.items.find(t => t.id === id);
+      if (task) {
+        if (completed !== undefined) task.completed = completed;
+        if (text !== undefined) task.text = sanitizeString(text, 200);
+        saveConfig(config);
+        return res.json({ success: true, task });
+      }
+    }
+
+    res.status(404).json({ error: 'Task not found' });
+  } catch (err) {
+    console.error('Update task error:', err);
+    res.status(500).json({ error: 'Failed to update task' });
+  }
+});
+
+// Delete task
+app.delete('/api/widgets/tasks/:id', adminAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!config.widgets?.tasks?.lists) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    for (const list of config.widgets.tasks.lists) {
+      const index = list.items.findIndex(t => t.id === id);
+      if (index !== -1) {
+        list.items.splice(index, 1);
+        saveConfig(config);
+        return res.json({ success: true });
+      }
+    }
+
+    res.status(404).json({ error: 'Task not found' });
+  } catch (err) {
+    console.error('Delete task error:', err);
+    res.status(500).json({ error: 'Failed to delete task' });
+  }
+});
+
+// Grocery list
+app.get('/api/widgets/grocery', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.groceryList?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    res.json({
+      enabled: true,
+      items: widgets.groceryList.items || []
+    });
+  } catch (err) {
+    console.error('Grocery list error:', err);
+    res.status(500).json({ error: 'Grocery list unavailable' });
+  }
+});
+
+// Add grocery item
+app.post('/api/widgets/grocery', adminAuth, (req, res) => {
+  try {
+    const { item, quantity, category } = req.body;
+    if (!config.widgets) config.widgets = { ...DEFAULT_CONFIG.widgets };
+    if (!config.widgets.groceryList) config.widgets.groceryList = { enabled: true, items: [] };
+
+    config.widgets.groceryList.items.push({
+      id: Date.now().toString(),
+      name: sanitizeString(item, 100),
+      quantity: quantity || 1,
+      category: category || 'Other',
+      checked: false
+    });
+
+    saveConfig(config);
+    res.json({ success: true, items: config.widgets.groceryList.items });
+  } catch (err) {
+    console.error('Add grocery error:', err);
+    res.status(500).json({ error: 'Failed to add item' });
+  }
+});
+
+// Toggle grocery item
+app.put('/api/widgets/grocery/:id', adminAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+    const { checked } = req.body;
+
+    if (!config.widgets?.groceryList?.items) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    const item = config.widgets.groceryList.items.find(i => i.id === id);
+    if (item) {
+      item.checked = checked;
+      saveConfig(config);
+      return res.json({ success: true, item });
+    }
+
+    res.status(404).json({ error: 'Item not found' });
+  } catch (err) {
+    console.error('Update grocery error:', err);
+    res.status(500).json({ error: 'Failed to update item' });
+  }
+});
+
+// Delete grocery item
+app.delete('/api/widgets/grocery/:id', adminAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!config.widgets?.groceryList?.items) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    const index = config.widgets.groceryList.items.findIndex(i => i.id === id);
+    if (index !== -1) {
+      config.widgets.groceryList.items.splice(index, 1);
+      saveConfig(config);
+      return res.json({ success: true });
+    }
+
+    res.status(404).json({ error: 'Item not found' });
+  } catch (err) {
+    console.error('Delete grocery error:', err);
+    res.status(500).json({ error: 'Failed to delete item' });
+  }
+});
+
+// Chores rotation
+app.get('/api/widgets/chores', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.chores?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    res.json({
+      enabled: true,
+      members: widgets.chores.members || [],
+      tasks: widgets.chores.tasks || []
+    });
+  } catch (err) {
+    console.error('Chores error:', err);
+    res.status(500).json({ error: 'Chores unavailable' });
+  }
+});
+
+// Medication reminders
+app.get('/api/widgets/medications', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.medications?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    res.json({
+      enabled: true,
+      reminders: widgets.medications.reminders || []
+    });
+  } catch (err) {
+    console.error('Medications error:', err);
+    res.status(500).json({ error: 'Medications unavailable' });
+  }
+});
+
+// ============================================
+// Phase 4: Transportation Widgets
+// ============================================
+
+// Traffic/commute times (Google Maps API)
+app.get('/api/widgets/traffic', async (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.traffic?.enabled || !widgets.traffic.googleMapsApiKey) {
+      return res.json({ enabled: false });
+    }
+
+    const apiKey = widgets.traffic.googleMapsApiKey;
+    const routes = widgets.traffic.routes || [];
+    const results = [];
+
+    for (const route of routes) {
+      try {
+        const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(route.origin)}&destinations=${encodeURIComponent(route.destination)}&departure_time=now&key=${apiKey}`;
+        const response = await fetch(url, { timeout: 10000 });
+        const data = await response.json();
+
+        if (data.rows?.[0]?.elements?.[0]) {
+          const element = data.rows[0].elements[0];
+          results.push({
+            name: route.name || `${route.origin} to ${route.destination}`,
+            duration: element.duration?.text,
+            durationInTraffic: element.duration_in_traffic?.text,
+            distance: element.distance?.text,
+            status: element.status
+          });
+        }
+      } catch (routeErr) {
+        results.push({ name: route.name, error: true });
+      }
+    }
+
+    res.json({ enabled: true, routes: results });
+  } catch (err) {
+    console.error('Traffic error:', err);
+    res.status(500).json({ error: 'Traffic data unavailable' });
+  }
+});
+
+// Gas prices
+app.get('/api/widgets/gas', async (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.gasPrices?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    // Gas prices would require a specific API subscription
+    // For now, return placeholder
+    res.json({
+      enabled: true,
+      message: 'Gas price API requires subscription',
+      prices: []
+    });
+  } catch (err) {
+    console.error('Gas prices error:', err);
+    res.status(500).json({ error: 'Gas prices unavailable' });
+  }
+});
+
+// ============================================
+// Phase 5: Finance Widgets
+// ============================================
+
+// Stock prices
+app.get('/api/widgets/stocks', async (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.stocks?.enabled || !widgets.stocks.symbols?.length) {
+      return res.json({ enabled: false });
+    }
+
+    const symbols = widgets.stocks.symbols;
+    const apiKey = widgets.stocks.apiKey;
+
+    // Check cache (5 minute refresh)
+    if (widgetCache.stocks.data && Date.now() - widgetCache.stocks.timestamp < 300000) {
+      return res.json({ enabled: true, stocks: widgetCache.stocks.data, cached: true });
+    }
+
+    const stocks = [];
+
+    // Use Alpha Vantage API if key provided
+    if (apiKey) {
+      for (const symbol of symbols.slice(0, 5)) {
+        try {
+          const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${apiKey}`;
+          const response = await fetch(url, { timeout: 10000 });
+          const data = await response.json();
+
+          if (data['Global Quote']) {
+            const quote = data['Global Quote'];
+            stocks.push({
+              symbol: symbol,
+              price: parseFloat(quote['05. price']).toFixed(2),
+              change: parseFloat(quote['09. change']).toFixed(2),
+              changePercent: quote['10. change percent']
+            });
+          }
+        } catch (stockErr) {
+          stocks.push({ symbol, error: true });
+        }
+      }
+    }
+
+    widgetCache.stocks.data = stocks;
+    widgetCache.stocks.timestamp = Date.now();
+
+    res.json({ enabled: true, stocks });
+  } catch (err) {
+    console.error('Stocks error:', err);
+    res.status(500).json({ error: 'Stock data unavailable' });
+  }
+});
+
+// Cryptocurrency prices (CoinGecko - free)
+app.get('/api/widgets/crypto', async (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.crypto?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    // Check cache (5 minute refresh)
+    if (widgetCache.crypto.data && Date.now() - widgetCache.crypto.timestamp < 300000) {
+      return res.json({ enabled: true, coins: widgetCache.crypto.data, cached: true });
+    }
+
+    const coins = widgets.crypto.coins || ['bitcoin', 'ethereum'];
+    const ids = coins.join(',');
+
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
+    const response = await fetch(url, { timeout: 10000 });
+    const data = await response.json();
+
+    const results = coins.map(coin => ({
+      id: coin,
+      name: coin.charAt(0).toUpperCase() + coin.slice(1),
+      price: data[coin]?.usd?.toFixed(2) || 'N/A',
+      change24h: data[coin]?.usd_24h_change?.toFixed(2) || 'N/A'
+    }));
+
+    widgetCache.crypto.data = results;
+    widgetCache.crypto.timestamp = Date.now();
+
+    res.json({ enabled: true, coins: results });
+  } catch (err) {
+    console.error('Crypto error:', err);
+    res.status(500).json({ error: 'Crypto data unavailable' });
+  }
+});
+
+// ============================================
+// Phase 6: Sports & Entertainment
+// ============================================
+
+// Sports scores (ESPN API - unofficial)
+app.get('/api/widgets/sports', async (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.sports?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    const leagues = widgets.sports.leagues || ['nfl', 'nba'];
+    const results = [];
+
+    for (const league of leagues) {
+      try {
+        const url = `https://site.api.espn.com/apis/site/v2/sports/${getEspnSport(league)}/${league}/scoreboard`;
+        const response = await fetch(url, { timeout: 10000 });
+        const data = await response.json();
+
+        const events = (data.events || []).slice(0, 3).map(e => ({
+          name: e.name,
+          status: e.status?.type?.description,
+          homeTeam: e.competitions?.[0]?.competitors?.find(c => c.homeAway === 'home')?.team?.abbreviation,
+          homeScore: e.competitions?.[0]?.competitors?.find(c => c.homeAway === 'home')?.score,
+          awayTeam: e.competitions?.[0]?.competitors?.find(c => c.homeAway === 'away')?.team?.abbreviation,
+          awayScore: e.competitions?.[0]?.competitors?.find(c => c.homeAway === 'away')?.score
+        }));
+
+        results.push({ league: league.toUpperCase(), events });
+      } catch (leagueErr) {
+        results.push({ league: league.toUpperCase(), error: true });
+      }
+    }
+
+    res.json({ enabled: true, leagues: results });
+  } catch (err) {
+    console.error('Sports error:', err);
+    res.status(500).json({ error: 'Sports data unavailable' });
+  }
+});
+
+function getEspnSport(league) {
+  const sportMap = {
+    'nfl': 'football',
+    'nba': 'basketball',
+    'mlb': 'baseball',
+    'nhl': 'hockey',
+    'mls': 'soccer',
+    'epl': 'soccer'
+  };
+  return sportMap[league.toLowerCase()] || 'football';
+}
+
+// ============================================
+// Phase 7: Media Widgets
+// ============================================
+
+// Get photos from Unsplash
+app.get('/api/widgets/photos/unsplash', async (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.photos?.enabled || widgets.photos.provider !== 'unsplash') {
+      return res.json({ enabled: false });
+    }
+
+    // Unsplash Source (free, no API key needed for random photos)
+    const collection = widgets.photos.unsplashCollection || '1053828';
+    const url = `https://source.unsplash.com/collection/${collection}/1920x1080`;
+
+    res.json({
+      enabled: true,
+      imageUrl: url,
+      provider: 'unsplash'
+    });
+  } catch (err) {
+    console.error('Unsplash error:', err);
+    res.status(500).json({ error: 'Photos unavailable' });
+  }
+});
+
+// Photo frame mode settings
+app.get('/api/widgets/photoframe', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+
+    res.json({
+      enabled: widgets.photoFrame?.enabled || false,
+      interval: widgets.photoFrame?.interval || 60,
+      showClock: widgets.photoFrame?.showClock ?? true,
+      showWeather: widgets.photoFrame?.showWeather ?? true
+    });
+  } catch (err) {
+    console.error('Photo frame error:', err);
+    res.status(500).json({ error: 'Photo frame settings unavailable' });
+  }
+});
+
+// ============================================
+// Phase 8: Smart Home
+// ============================================
+
+// Home Assistant integration
+app.get('/api/widgets/homeassistant', async (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.homeAssistant?.enabled || !widgets.homeAssistant.url) {
+      return res.json({ enabled: false });
+    }
+
+    const haUrl = widgets.homeAssistant.url;
+    const token = widgets.homeAssistant.token;
+    const entities = widgets.homeAssistant.entities || [];
+
+    if (!token || !entities.length) {
+      return res.json({ enabled: true, entities: [] });
+    }
+
+    const states = [];
+
+    for (const entityId of entities) {
+      try {
+        const response = await fetch(`${haUrl}/api/states/${entityId}`, {
+          timeout: 10000,
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          states.push({
+            entityId: data.entity_id,
+            state: data.state,
+            friendlyName: data.attributes?.friendly_name || entityId,
+            icon: data.attributes?.icon,
+            unitOfMeasurement: data.attributes?.unit_of_measurement
+          });
+        }
+      } catch (entityErr) {
+        states.push({ entityId, error: true });
+      }
+    }
+
+    res.json({ enabled: true, entities: states });
+  } catch (err) {
+    console.error('Home Assistant error:', err);
+    res.status(500).json({ error: 'Home Assistant unavailable' });
+  }
+});
+
+// Toggle Home Assistant entity
+app.post('/api/widgets/homeassistant/toggle', adminAuth, async (req, res) => {
+  try {
+    const { entityId } = req.body;
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+
+    if (!widgets.homeAssistant?.enabled || !widgets.homeAssistant.url) {
+      return res.status(400).json({ error: 'Home Assistant not configured' });
+    }
+
+    const haUrl = widgets.homeAssistant.url;
+    const token = widgets.homeAssistant.token;
+
+    const domain = entityId.split('.')[0];
+    const service = 'toggle';
+
+    const response = await fetch(`${haUrl}/api/services/${domain}/${service}`, {
+      method: 'POST',
+      timeout: 10000,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ entity_id: entityId })
+    });
+
+    if (response.ok) {
+      res.json({ success: true });
+    } else {
+      res.status(500).json({ error: 'Failed to toggle entity' });
+    }
+  } catch (err) {
+    console.error('HA toggle error:', err);
+    res.status(500).json({ error: 'Toggle failed' });
+  }
+});
+
+// ============================================
+// Phase 9: Social Widgets
+// ============================================
+
+// Message board
+app.get('/api/widgets/messages', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.messageBoard?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    res.json({
+      enabled: true,
+      messages: widgets.messageBoard.messages || []
+    });
+  } catch (err) {
+    console.error('Messages error:', err);
+    res.status(500).json({ error: 'Messages unavailable' });
+  }
+});
+
+// Post message
+app.post('/api/widgets/messages', adminAuth, (req, res) => {
+  try {
+    const { text, author } = req.body;
+    if (!config.widgets) config.widgets = { ...DEFAULT_CONFIG.widgets };
+    if (!config.widgets.messageBoard) config.widgets.messageBoard = { enabled: true, messages: [] };
+
+    config.widgets.messageBoard.messages.unshift({
+      id: Date.now().toString(),
+      text: sanitizeString(text, 500),
+      author: sanitizeString(author || 'Anonymous', 50),
+      timestamp: new Date().toISOString()
+    });
+
+    // Keep only last 20 messages
+    config.widgets.messageBoard.messages = config.widgets.messageBoard.messages.slice(0, 20);
+
+    saveConfig(config);
+    res.json({ success: true, messages: config.widgets.messageBoard.messages });
+  } catch (err) {
+    console.error('Post message error:', err);
+    res.status(500).json({ error: 'Failed to post message' });
+  }
+});
+
+// Delete message
+app.delete('/api/widgets/messages/:id', adminAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!config.widgets?.messageBoard?.messages) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    const index = config.widgets.messageBoard.messages.findIndex(m => m.id === id);
+    if (index !== -1) {
+      config.widgets.messageBoard.messages.splice(index, 1);
+      saveConfig(config);
+      return res.json({ success: true });
+    }
+
+    res.status(404).json({ error: 'Message not found' });
+  } catch (err) {
+    console.error('Delete message error:', err);
+    res.status(500).json({ error: 'Failed to delete message' });
+  }
+});
+
+// Family profiles
+app.get('/api/widgets/profiles', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.familyProfiles?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    res.json({
+      enabled: true,
+      profiles: widgets.familyProfiles.profiles || []
+    });
+  } catch (err) {
+    console.error('Profiles error:', err);
+    res.status(500).json({ error: 'Profiles unavailable' });
+  }
+});
+
+// ============================================
+// Phase 10: System Stats
+// ============================================
+
+app.get('/api/widgets/system', async (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+    if (!widgets.systemStats?.enabled) {
+      return res.json({ enabled: false });
+    }
+
+    const stats = {};
+
+    // CPU usage (Linux only)
+    if (widgets.systemStats.showCpu) {
+      try {
+        const cpuData = fs.readFileSync('/proc/stat', 'utf8');
+        const cpuLine = cpuData.split('\n')[0].split(/\s+/);
+        const idle = parseInt(cpuLine[4]);
+        const total = cpuLine.slice(1, 8).reduce((a, b) => a + parseInt(b), 0);
+        stats.cpuUsage = Math.round((1 - idle / total) * 100);
+      } catch (e) {
+        stats.cpuUsage = null;
+      }
+    }
+
+    // Memory usage
+    if (widgets.systemStats.showMemory) {
+      try {
+        const memData = fs.readFileSync('/proc/meminfo', 'utf8');
+        const memTotal = parseInt(memData.match(/MemTotal:\s+(\d+)/)?.[1] || 0);
+        const memAvailable = parseInt(memData.match(/MemAvailable:\s+(\d+)/)?.[1] || 0);
+        stats.memoryUsage = Math.round((1 - memAvailable / memTotal) * 100);
+        stats.memoryTotal = Math.round(memTotal / 1024);
+        stats.memoryUsed = Math.round((memTotal - memAvailable) / 1024);
+      } catch (e) {
+        stats.memoryUsage = null;
+      }
+    }
+
+    // CPU temperature (Raspberry Pi)
+    if (widgets.systemStats.showTemp) {
+      try {
+        const temp = fs.readFileSync('/sys/class/thermal/thermal_zone0/temp', 'utf8');
+        stats.cpuTemp = (parseInt(temp) / 1000).toFixed(1);
+      } catch (e) {
+        stats.cpuTemp = null;
+      }
+    }
+
+    // Uptime
+    try {
+      const uptime = fs.readFileSync('/proc/uptime', 'utf8');
+      const seconds = parseInt(uptime.split(' ')[0]);
+      const days = Math.floor(seconds / 86400);
+      const hours = Math.floor((seconds % 86400) / 3600);
+      stats.uptime = `${days}d ${hours}h`;
+    } catch (e) {
+      stats.uptime = null;
+    }
+
+    res.json({ enabled: true, stats });
+  } catch (err) {
+    console.error('System stats error:', err);
+    res.status(500).json({ error: 'System stats unavailable' });
+  }
+});
+
+// Get all widget states for dashboard
+app.get('/api/widgets', (req, res) => {
+  try {
+    const widgets = config.widgets || DEFAULT_CONFIG.widgets;
+
+    // Return enabled status for all widgets
+    res.json({
+      news: { enabled: widgets.news?.enabled || false },
+      quotes: { enabled: widgets.quotes?.enabled || false },
+      wordOfDay: { enabled: widgets.wordOfDay?.enabled || false },
+      jokeOfDay: { enabled: widgets.jokeOfDay?.enabled || false },
+      onThisDay: { enabled: widgets.onThisDay?.enabled || false },
+      moonPhase: { enabled: widgets.moonPhase?.enabled || false },
+      tides: { enabled: widgets.tides?.enabled || false },
+      uvIndex: { enabled: widgets.uvIndex?.enabled || false },
+      tasks: { enabled: widgets.tasks?.enabled || false },
+      groceryList: { enabled: widgets.groceryList?.enabled || false },
+      chores: { enabled: widgets.chores?.enabled || false },
+      medications: { enabled: widgets.medications?.enabled || false },
+      traffic: { enabled: widgets.traffic?.enabled || false },
+      stocks: { enabled: widgets.stocks?.enabled || false },
+      crypto: { enabled: widgets.crypto?.enabled || false },
+      sports: { enabled: widgets.sports?.enabled || false },
+      photos: { enabled: widgets.photos?.enabled || false },
+      photoFrame: { enabled: widgets.photoFrame?.enabled || false },
+      homeAssistant: { enabled: widgets.homeAssistant?.enabled || false },
+      messageBoard: { enabled: widgets.messageBoard?.enabled || false },
+      familyProfiles: { enabled: widgets.familyProfiles?.enabled || false },
+      systemStats: { enabled: widgets.systemStats?.enabled || false }
+    });
+  } catch (err) {
+    console.error('Widgets status error:', err);
+    res.status(500).json({ error: 'Widget status unavailable' });
+  }
 });
 
 // ============================================
