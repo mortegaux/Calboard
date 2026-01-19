@@ -48,6 +48,7 @@
       <button class="tab-btn active" data-tab="weather">Weather</button>
       <button class="tab-btn" data-tab="calendars">Calendars</button>
       <button class="tab-btn" data-tab="display">Display</button>
+      <button class="tab-btn" data-tab="layout">Layout</button>
       <button class="tab-btn" data-tab="widgets">Widgets</button>
       <button class="tab-btn" data-tab="features">Features</button>
       <button class="tab-btn" data-tab="accessibility">Accessibility</button>
@@ -266,6 +267,102 @@
         </div>
       </section>
 
+      <!-- Layout Tab -->
+      <section class="tab-content" id="tab-layout">
+        <h1>Layout Customization</h1>
+        <p class="tab-description">Customize the dashboard layout, reorder sections, and position widgets in a grid.</p>
+
+        <!-- Grid Settings -->
+        <div class="settings-section">
+          <h2>Grid Settings</h2>
+          <div class="settings-card">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="layout-grid-columns">Columns</label>
+                <input type="number" id="layout-grid-columns" min="1" max="6" value="3">
+                <small>Number of columns in the widget grid (1-6)</small>
+              </div>
+              <div class="form-group">
+                <label for="layout-grid-gap">Gap (px)</label>
+                <input type="number" id="layout-grid-gap" min="0" max="50" value="15">
+                <small>Space between widgets in pixels</small>
+              </div>
+              <div class="form-group">
+                <label for="layout-min-widget-width">Min Widget Width (px)</label>
+                <input type="number" id="layout-min-widget-width" min="100" max="500" value="280">
+                <small>Minimum width for each widget</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel Settings -->
+        <div class="settings-section">
+          <h2>Panel Settings</h2>
+          <div class="settings-card">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="layout-weather-width">Weather Panel Width (px)</label>
+                <input type="number" id="layout-weather-width" min="300" max="700" value="520">
+                <small>Width of the left weather panel</small>
+              </div>
+              <div class="form-group">
+                <label for="layout-weather-min-width">Weather Panel Min Width (px)</label>
+                <input type="number" id="layout-weather-min-width" min="250" max="600" value="450">
+                <small>Minimum width before panel stacks on mobile</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section Order -->
+        <div class="settings-section">
+          <h2>Dashboard Sections Order</h2>
+          <div class="settings-card">
+            <p class="section-description">Drag to reorder the main dashboard sections (left panel, calendar, widgets)</p>
+            <div id="section-order-list" class="sortable-list">
+              <div class="sortable-item" data-section="weather">
+                <span class="drag-handle">⋮⋮</span>
+                <span class="section-icon">🌤️</span>
+                <span class="section-label">Weather Panel (Left)</span>
+              </div>
+              <div class="sortable-item" data-section="calendar">
+                <span class="drag-handle">⋮⋮</span>
+                <span class="section-icon">📅</span>
+                <span class="section-label">Calendar Section</span>
+              </div>
+              <div class="sortable-item" data-section="widgets">
+                <span class="drag-handle">⋮⋮</span>
+                <span class="section-icon">📊</span>
+                <span class="section-label">Widgets Section</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Widget Positioning -->
+        <div class="settings-section">
+          <h2>Widget Positioning</h2>
+          <div class="settings-card">
+            <p class="section-description">Drag widgets to reposition them in the grid, or manually adjust their position and size below.</p>
+            <div class="layout-controls">
+              <button class="btn btn-secondary" id="layout-reset-btn">Reset to Auto-Layout</button>
+              <button class="btn btn-secondary" id="layout-preview-btn">Preview Layout</button>
+              <label class="checkbox-label">
+                <input type="checkbox" id="layout-show-grid">
+                <span>Show Grid Overlay</span>
+              </label>
+            </div>
+            <div class="widget-grid-editor" id="widget-grid-editor">
+              <!-- Widget grid will be populated by JavaScript -->
+              <div class="no-widgets-message" id="no-widgets-message">
+                <p>Enable some widgets in the Widgets tab to customize their layout.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Widgets Tab -->
       <section class="tab-content" id="tab-widgets">
         <div class="widgets-toolbar">
@@ -477,6 +574,7 @@
     </div>
   </template>
 
+  <script src="/vendor/sortable.min.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>

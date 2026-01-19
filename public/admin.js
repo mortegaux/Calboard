@@ -138,6 +138,478 @@ const WIDGET_METADATA = {
   }
 };
 
+// ============================================
+// Layout Manager Class
+// ============================================
+class LayoutManager {
+  constructor(adminInstance) {
+    this.admin = adminInstance;
+    this.sectionOrderSortable = null;
+    this.widgetGridSortable = null;
+    this.currentLayout = null;
+  }
+
+  init() {
+    // Initialize section order sortable
+    this.initSectionOrderSortable();
+
+    // Initialize grid controls
+    this.initGridControls();
+
+    // Initialize widget grid editor
+    this.initWidgetGridEditor();
+
+    // Set up event listeners for grid settings
+    this.setupGridSettingsListeners();
+  }
+
+  initSectionOrderSortable() {
+    const sectionOrderList = document.getElementById('section-order-list');
+    if (!sectionOrderList || typeof Sortable === 'undefined') {
+      console.warn('Sortable.js not loaded or section-order-list not found');
+      return;
+    }
+
+    this.sectionOrderSortable = new Sortable(sectionOrderList, {
+      animation: 150,
+      handle: '.drag-handle',
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      onEnd: () => {
+        this.admin.markUnsavedChanges();
+      }
+    });
+  }
+
+  initGridControls() {
+    const resetBtn = document.getElementById('layout-reset-btn');
+    const previewBtn = document.getElementById('layout-preview-btn');
+    const showGridCheckbox = document.getElementById('layout-show-grid');
+
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => this.resetLayout());
+    }
+
+    if (previewBtn) {
+      previewBtn.addEventListener('click', () => this.previewLayout());
+    }
+
+    if (showGridCheckbox) {
+      showGridCheckbox.addEventListener('change', (e) => {
+        const gridEditor = document.getElementById('widget-grid-editor');
+        if (gridEditor) {
+          gridEditor.classList.toggle('show-grid', e.target.checked);
+        }
+      });
+    }
+  }
+
+  setupGridSettingsListeners() {
+    const columnsInput = document.getElementById('layout-grid-columns');
+    const gapInput = document.getElementById('layout-grid-gap');
+
+    if (columnsInput) {
+      columnsInput.addEventListener('change', () => {
+        this.updateGridColumns();
+        this.admin.markUnsavedChanges();
+      });
+    }
+
+    if (gapInput) {
+      gapInput.addEventListener('change', () => {
+        this.updateGridGap();
+        this.admin.markUnsavedChanges();
+      });
+    }
+
+    // Add listeners for other grid settings
+    const inputs = [
+      'layout-min-widget-width',
+      'layout-weather-width',
+      'layout-weather-min-width'
+    ];
+
+    inputs.forEach(id => {
+      const input = document.getElementById(id);
+      if (input) {
+        input.addEventListener('change', () => {
+          this.admin.markUnsavedChanges();
+        });
+      }
+    });
+  }
+
+  initWidgetGridEditor() {
+    // This will be called after widgets are loaded
+    // Initial state shows "no widgets" message
+  }
+
+  updateWidgetGridEditor() {
+    const gridEditor = document.getElementById('widget-grid-editor');
+    const noWidgetsMsg = document.getElementById('no-widgets-message');
+    if (!gridEditor) return;
+
+    const enabledWidgets = this.getEnabledWidgets();
+
+    if (enabledWidgets.length === 0) {
+      if (noWidgetsMsg) {
+        noWidgetsMsg.style.display = 'block';
+      }
+      // Clear any existing grid
+      const existingGrid = gridEditor.querySelector('.grid-preview');
+      if (existingGrid) {
+        existingGrid.remove();
+      }
+      return;
+    }
+
+    if (noWidgetsMsg) {
+      noWidgetsMsg.style.display = 'none';
+    }
+
+    this.createGridPreview(enabledWidgets);
+  }
+
+  getEnabledWidgets() {
+    const widgets = [];
+    const config = this.admin.config;
+
+    if (!config || !config.widgets) return widgets;
+
+    // Iterate through all widget categories
+    for (const [category, metadata] of Object.entries(WIDGET_METADATA)) {
+      if (!metadata.widgets) continue;
+
+      for (const [widgetKey, widgetMeta] of Object.entries(metadata.widgets)) {
+        const widgetConfig = config.widgets[widgetKey];
+        if (widgetConfig && widgetConfig.enabled) {
+          widgets.push({
+            id: widgetKey,
+            name: widgetMeta.name,
+            category: category,
+            position: this.currentLayout?.widgets?.[widgetKey] || {}
+          });
+        }
+      }
+    }
+
+    return widgets;
+  }
+
+  createGridPreview(widgets) {
+    const gridEditor = document.getElementById('widget-grid-editor');
+    if (!gridEditor) return;
+
+    // Remove existing grid if any
+    let gridPreview = gridEditor.querySelector('.grid-preview');
+    if (!gridPreview) {
+      gridPreview = document.createElement('div');
+      gridPreview.className = 'grid-preview';
+      gridEditor.appendChild(gridPreview);
+    } else {
+      gridPreview.innerHTML = '';
+    }
+
+    // Set grid columns
+    const columns = parseInt(document.getElementById('layout-grid-columns')?.value || 3);
+    const gap = document.getElementById('layout-grid-gap')?.value || 15;
+    gridPreview.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+    gridPreview.style.gap = `${gap}px`;
+
+    // Create widget items
+    widgets.forEach((widget, index) => {
+      const widgetItem = this.createWidgetGridItem(widget, index);
+      gridPreview.appendChild(widgetItem);
+    });
+
+    // Initialize sortable for widget grid
+    if (this.widgetGridSortable) {
+      this.widgetGridSortable.destroy();
+    }
+
+    if (typeof Sortable !== 'undefined') {
+      this.widgetGridSortable = new Sortable(gridPreview, {
+        animation: 150,
+        handle: '.widget-preview-drag',
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        onEnd: (evt) => {
+          this.updateWidgetPositionsAfterDrag();
+          this.admin.markUnsavedChanges();
+        }
+      });
+    }
+  }
+
+  createWidgetGridItem(widget, index) {
+    const item = document.createElement('div');
+    item.className = 'grid-widget-item';
+    item.dataset.widgetId = widget.id;
+
+    const position = widget.position;
+    const column = position.column || (index % 3) + 1;
+    const row = position.row || Math.floor(index / 3) + 1;
+    const colSpan = position.colSpan || 1;
+    const rowSpan = position.rowSpan || 1;
+
+    // Set grid position
+    item.style.gridColumn = `${column} / span ${colSpan}`;
+    item.style.gridRow = `${row} / span ${rowSpan}`;
+
+    item.innerHTML = `
+      <div class="widget-preview-header">
+        <span class="widget-preview-title">${widget.name}</span>
+        <span class="widget-preview-drag">⋮⋮</span>
+      </div>
+      <div class="widget-preview-controls">
+        <div class="widget-preview-control">
+          <label>Column</label>
+          <input type="number" class="widget-col-input" min="1" max="6" value="${column}" data-widget="${widget.id}">
+        </div>
+        <div class="widget-preview-control">
+          <label>Row</label>
+          <input type="number" class="widget-row-input" min="1" max="20" value="${row}" data-widget="${widget.id}">
+        </div>
+        <div class="widget-preview-control">
+          <label>Width</label>
+          <input type="number" class="widget-colSpan-input" min="1" max="6" value="${colSpan}" data-widget="${widget.id}">
+        </div>
+        <div class="widget-preview-control">
+          <label>Height</label>
+          <input type="number" class="widget-rowSpan-input" min="1" max="4" value="${rowSpan}" data-widget="${widget.id}">
+        </div>
+      </div>
+      <div class="widget-position-badge">${column},${row}</div>
+    `;
+
+    // Add event listeners for manual inputs
+    const inputs = item.querySelectorAll('input[type="number"]');
+    inputs.forEach(input => {
+      input.addEventListener('change', (e) => {
+        this.updateWidgetPositionFromInput(e.target);
+      });
+    });
+
+    return item;
+  }
+
+  updateWidgetPositionFromInput(input) {
+    const widgetId = input.dataset.widget;
+    const widgetItem = document.querySelector(`.grid-widget-item[data-widget-id="${widgetId}"]`);
+    if (!widgetItem) return;
+
+    const colInput = widgetItem.querySelector('.widget-col-input');
+    const rowInput = widgetItem.querySelector('.widget-row-input');
+    const colSpanInput = widgetItem.querySelector('.widget-colSpan-input');
+    const rowSpanInput = widgetItem.querySelector('.widget-rowSpan-input');
+
+    const column = parseInt(colInput.value) || 1;
+    const row = parseInt(rowInput.value) || 1;
+    const colSpan = parseInt(colSpanInput.value) || 1;
+    const rowSpan = parseInt(rowSpanInput.value) || 1;
+
+    // Update grid position
+    widgetItem.style.gridColumn = `${column} / span ${colSpan}`;
+    widgetItem.style.gridRow = `${row} / span ${rowSpan}`;
+
+    // Update position badge
+    const badge = widgetItem.querySelector('.widget-position-badge');
+    if (badge) {
+      badge.textContent = `${column},${row}`;
+    }
+
+    this.admin.markUnsavedChanges();
+  }
+
+  updateWidgetPositionsAfterDrag() {
+    const gridPreview = document.querySelector('.grid-preview');
+    if (!gridPreview) return;
+
+    const columns = parseInt(document.getElementById('layout-grid-columns')?.value || 3);
+    const widgetItems = gridPreview.querySelectorAll('.grid-widget-item');
+
+    widgetItems.forEach((item, index) => {
+      const column = (index % columns) + 1;
+      const row = Math.floor(index / columns) + 1;
+
+      const colInput = item.querySelector('.widget-col-input');
+      const rowInput = item.querySelector('.widget-row-input');
+      const colSpanInput = item.querySelector('.widget-colSpan-input');
+      const rowSpanInput = item.querySelector('.widget-rowSpan-input');
+
+      if (colInput) colInput.value = column;
+      if (rowInput) rowInput.value = row;
+
+      const colSpan = parseInt(colSpanInput?.value || 1);
+      const rowSpan = parseInt(rowSpanInput?.value || 1);
+
+      item.style.gridColumn = `${column} / span ${colSpan}`;
+      item.style.gridRow = `${row} / span ${rowSpan}`;
+
+      const badge = item.querySelector('.widget-position-badge');
+      if (badge) {
+        badge.textContent = `${column},${row}`;
+      }
+    });
+  }
+
+  updateGridColumns() {
+    const columns = parseInt(document.getElementById('layout-grid-columns')?.value || 3);
+    const gridPreview = document.querySelector('.grid-preview');
+    if (gridPreview) {
+      gridPreview.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+    }
+  }
+
+  updateGridGap() {
+    const gap = document.getElementById('layout-grid-gap')?.value || 15;
+    const gridPreview = document.querySelector('.grid-preview');
+    if (gridPreview) {
+      gridPreview.style.gap = `${gap}px`;
+    }
+  }
+
+  resetLayout() {
+    if (!confirm('Reset layout to auto-flow? This will clear all custom positions.')) {
+      return;
+    }
+
+    // Clear all position inputs
+    const gridItems = document.querySelectorAll('.grid-widget-item');
+    gridItems.forEach((item, index) => {
+      const columns = parseInt(document.getElementById('layout-grid-columns')?.value || 3);
+      const column = (index % columns) + 1;
+      const row = Math.floor(index / columns) + 1;
+
+      const colInput = item.querySelector('.widget-col-input');
+      const rowInput = item.querySelector('.widget-row-input');
+      const colSpanInput = item.querySelector('.widget-colSpan-input');
+      const rowSpanInput = item.querySelector('.widget-rowSpan-input');
+
+      if (colInput) colInput.value = column;
+      if (rowInput) rowInput.value = row;
+      if (colSpanInput) colSpanInput.value = 1;
+      if (rowSpanInput) rowSpanInput.value = 1;
+
+      item.style.gridColumn = `${column} / span 1`;
+      item.style.gridRow = `${row} / span 1`;
+
+      const badge = item.querySelector('.widget-position-badge');
+      if (badge) {
+        badge.textContent = `${column},${row}`;
+      }
+    });
+
+    this.admin.markUnsavedChanges();
+  }
+
+  previewLayout() {
+    window.open('/', '_blank');
+  }
+
+  populateFromConfig(config) {
+    if (!config || !config.display) return;
+
+    this.currentLayout = config.display.layout || {};
+
+    // Populate grid settings
+    const layout = this.currentLayout;
+
+    if (layout.grid) {
+      const columnsInput = document.getElementById('layout-grid-columns');
+      const gapInput = document.getElementById('layout-grid-gap');
+      const minWidthInput = document.getElementById('layout-min-widget-width');
+
+      if (columnsInput && layout.grid.columns) {
+        columnsInput.value = layout.grid.columns;
+      }
+      if (gapInput && layout.grid.gap) {
+        gapInput.value = parseInt(layout.grid.gap) || 15;
+      }
+      if (minWidthInput && layout.grid.minWidgetWidth) {
+        minWidthInput.value = parseInt(layout.grid.minWidgetWidth) || 280;
+      }
+    }
+
+    // Populate panel settings
+    if (layout.panels) {
+      const weatherWidthInput = document.getElementById('layout-weather-width');
+      const weatherMinWidthInput = document.getElementById('layout-weather-min-width');
+
+      if (weatherWidthInput && layout.panels.weatherWidth) {
+        weatherWidthInput.value = parseInt(layout.panels.weatherWidth) || 520;
+      }
+      if (weatherMinWidthInput && layout.panels.weatherMinWidth) {
+        weatherMinWidthInput.value = parseInt(layout.panels.weatherMinWidth) || 450;
+      }
+    }
+
+    // Populate section order
+    if (layout.sectionOrder && this.sectionOrderSortable) {
+      const sectionOrderList = document.getElementById('section-order-list');
+      if (sectionOrderList) {
+        // Reorder DOM elements based on config
+        layout.sectionOrder.forEach((sectionName, index) => {
+          const item = sectionOrderList.querySelector(`[data-section="${sectionName}"]`);
+          if (item) {
+            sectionOrderList.appendChild(item);
+          }
+        });
+      }
+    }
+
+    // Update widget grid editor with current layout
+    this.updateWidgetGridEditor();
+  }
+
+  collectFormData() {
+    const formData = {
+      grid: {
+        columns: parseInt(document.getElementById('layout-grid-columns')?.value || 3),
+        gap: `${document.getElementById('layout-grid-gap')?.value || 15}px`,
+        minWidgetWidth: `${document.getElementById('layout-min-widget-width')?.value || 280}px`
+      },
+      panels: {
+        weatherWidth: `${document.getElementById('layout-weather-width')?.value || 420}px`,
+        weatherMinWidth: `${document.getElementById('layout-weather-min-width')?.value || 350}px`
+      },
+      sectionOrder: [],
+      widgets: {},
+      mode: 'grid'
+    };
+
+    // Collect section order
+    const sectionItems = document.querySelectorAll('#section-order-list .sortable-item');
+    sectionItems.forEach(item => {
+      const section = item.dataset.section;
+      if (section) {
+        formData.sectionOrder.push(section);
+      }
+    });
+
+    // Collect widget positions
+    const widgetItems = document.querySelectorAll('.grid-widget-item');
+    widgetItems.forEach(item => {
+      const widgetId = item.dataset.widgetId;
+      if (!widgetId) return;
+
+      const colInput = item.querySelector('.widget-col-input');
+      const rowInput = item.querySelector('.widget-row-input');
+      const colSpanInput = item.querySelector('.widget-colSpan-input');
+      const rowSpanInput = item.querySelector('.widget-rowSpan-input');
+
+      formData.widgets[widgetId] = {
+        column: parseInt(colInput?.value || 1),
+        row: parseInt(rowInput?.value || 1),
+        colSpan: parseInt(colSpanInput?.value || 1),
+        rowSpan: parseInt(rowSpanInput?.value || 1)
+      };
+    });
+
+    return formData;
+  }
+}
+
 class CalboardAdmin {
   constructor() {
     this.config = null;
@@ -158,6 +630,10 @@ class CalboardAdmin {
 
     this.bindEvents();
     this.setupTabs();
+
+    // Initialize layout manager
+    this.layoutManager = new LayoutManager(this);
+    this.layoutManager.init();
   }
 
   async checkAuthRequired() {
@@ -297,6 +773,11 @@ class CalboardAdmin {
     this.renderCalendars();
     this.renderAdditionalLocations();
     this.renderWidgets();
+
+    // Populate layout settings
+    if (this.layoutManager) {
+      this.layoutManager.populateFromConfig(this.config);
+    }
   }
 
   renderCalendars() {
@@ -354,6 +835,11 @@ class CalboardAdmin {
 
     this.bindWidgetEvents();
     this.updateWidgetStats();
+
+    // Update layout manager widget grid
+    if (this.layoutManager) {
+      this.layoutManager.updateWidgetGridEditor();
+    }
   }
 
   createCategoryElement(categoryKey, categoryData) {
@@ -1486,7 +1972,8 @@ class CalboardAdmin {
         showEventCountdown: document.getElementById('display-show-countdown').checked,
         showTodayBadge: document.getElementById('display-show-badge').checked,
         customCSS: document.getElementById('display-custom-css').value,
-        hiddenCalendars: this.config.display?.hiddenCalendars || []
+        hiddenCalendars: this.config.display?.hiddenCalendars || [],
+        layout: this.layoutManager ? this.layoutManager.collectFormData() : (this.config.display?.layout || {})
       },
       features: {
         screenWakeLock: document.getElementById('feature-wakelock').checked,

@@ -247,8 +247,8 @@ body {
    ========================================== */
 
 .left-panel {
-  width: 420px;
-  min-width: 420px;
+  width: 520px;
+  min-width: 520px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -791,14 +791,14 @@ body {
 }
 
 .day-number {
-  font-size: 36px;
+  font-size: 48px;
   font-weight: 300;
   opacity: 0.9;
   color: var(--text-primary);
 }
 
 .day-name {
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 400;
   opacity: 0.8;
   color: var(--text-secondary);
@@ -855,9 +855,9 @@ body {
 }
 
 .event-time {
-  width: 100px;
+  width: 120px;
   flex-shrink: 0;
-  font-size: 15px;
+  font-size: 19px;
   font-weight: 400;
   opacity: 0.8;
   color: var(--text-secondary);
@@ -865,7 +865,7 @@ body {
 
 .event-duration {
   display: block;
-  font-size: 11px;
+  font-size: 14px;
   opacity: 0.6;
   margin-top: 2px;
 }
@@ -876,7 +876,7 @@ body {
 
 .event-title {
   flex: 1;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 400;
   line-height: 1.4;
   color: var(--text-primary);
@@ -887,7 +887,7 @@ body {
 }
 
 .event-location {
-  font-size: 13px;
+  font-size: 16px;
   opacity: 0.6;
   margin-top: 2px;
   color: var(--text-muted);
@@ -1034,8 +1034,8 @@ body {
 
 @media (max-width: 1200px) {
   .left-panel {
-    width: 350px;
-    min-width: 350px;
+    width: 450px;
+    min-width: 450px;
   }
 
   .time {
@@ -1155,6 +1155,7 @@ body {
    Widgets Section
    ========================================== */
 
+/* Widgets section - default grid layout (can be overridden by layout customization) */
 .widgets-section {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -1678,7 +1679,18 @@ body {
 /* Widget Responsive */
 @media (max-width: 900px) {
   .widgets-section {
-    grid-template-columns: 1fr;
+    /* Force single column and ignore custom layout on mobile */
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 15px;
+  }
+
+  /* Reset all custom grid positioning on mobile */
+  .widgets-section > * {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 }
 

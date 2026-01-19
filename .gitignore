@@ -27,3 +27,11 @@ public/backgrounds/*.jpg
 public/backgrounds/*.png
 public/backgrounds/*.jpeg
 !public/backgrounds/.gitkeep
+
+# Docker
+*.backup.*.json
+config.backup.json
+
+# Environment
+.env
+.env.local

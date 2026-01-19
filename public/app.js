@@ -58,6 +58,9 @@ class Calboard {
     // Load widgets
     await this.loadWidgets();
 
+    // Apply layout customization
+    this.applyLayout();
+
     // Set up auto-refresh
     const refreshMinutes = this.config?.display?.refreshIntervalMinutes || 5;
     this.refreshInterval = setInterval(() => {
@@ -151,6 +154,110 @@ class Calboard {
     document.getElementById('time').setAttribute('aria-label', 'Current time');
     document.getElementById('date').setAttribute('aria-label', 'Current date');
     document.getElementById('current-temp').setAttribute('aria-label', 'Current temperature');
+  }
+
+  // ==========================================
+  // Layout Customization
+  // ==========================================
+
+  applyLayout() {
+    const layout = this.config?.display?.layout;
+
+    // If no layout config or no custom widgets, use default auto-flow
+    if (!layout || !layout.widgets || Object.keys(layout.widgets).length === 0) {
+      return;
+    }
+
+    // Apply section order if specified
+    if (layout.sectionOrder && Array.isArray(layout.sectionOrder)) {
+      this.applySectionOrder(layout.sectionOrder);
+    }
+
+    // Apply widget grid layout
+    this.applyWidgetLayout(layout);
+
+    // Apply panel settings
+    if (layout.panels) {
+      this.applyPanelSettings(layout.panels);
+    }
+  }
+
+  applySectionOrder(order) {
+    // Note: This is a simplified implementation
+    // For full section reordering, the HTML structure needs to support it
+    // Currently this just adds CSS order properties
+    const sectionMap = {
+      'weather': document.querySelector('.weather-panel'),
+      'calendar': document.querySelector('.calendar-section'),
+      'widgets': document.querySelector('.widgets-section')
+    };
+
+    order.forEach((sectionName, index) => {
+      const section = sectionMap[sectionName];
+      if (section) {
+        section.style.order = index;
+      }
+    });
+  }
+
+  applyWidgetLayout(layout) {
+    const widgetsSection = document.getElementById('widgets-section');
+    if (!widgetsSection) return;
+
+    const { grid, widgets } = layout;
+
+    // Apply grid settings
+    if (grid) {
+      widgetsSection.style.display = 'grid';
+      widgetsSection.style.gridTemplateColumns = `repeat(${grid.columns || 3}, 1fr)`;
+      widgetsSection.style.gap = grid.gap || '15px';
+      widgetsSection.style.gridAutoRows = 'minmax(150px, auto)';
+
+      // Set min width on grid items
+      if (grid.minWidgetWidth) {
+        const style = document.createElement('style');
+        style.textContent = `
+          #widgets-section > * {
+            min-width: ${grid.minWidgetWidth};
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+
+    // Apply individual widget positions
+    for (const [widgetId, position] of Object.entries(widgets)) {
+      // Widget IDs in config use camelCase, but HTML IDs use kebab-case
+      const widgetEl = document.getElementById(widgetId) ||
+                       document.getElementById(this.camelToKebab(widgetId));
+
+      if (!widgetEl) continue;
+
+      // Apply grid positioning
+      if (position.column && position.colSpan) {
+        widgetEl.style.gridColumn = `${position.column} / span ${position.colSpan}`;
+      }
+      if (position.row && position.rowSpan) {
+        widgetEl.style.gridRow = `${position.row} / span ${position.rowSpan}`;
+      }
+    }
+  }
+
+  applyPanelSettings(panels) {
+    const weatherPanel = document.querySelector('.weather-panel');
+    if (!weatherPanel) return;
+
+    if (panels.weatherWidth) {
+      weatherPanel.style.width = panels.weatherWidth;
+      weatherPanel.style.maxWidth = panels.weatherWidth;
+    }
+    if (panels.weatherMinWidth) {
+      weatherPanel.style.minWidth = panels.weatherMinWidth;
+    }
+  }
+
+  camelToKebab(str) {
+    return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
   }
 
   // ==========================================
@@ -562,21 +669,45 @@ class Calboard {
       return;
     }
 
+    const now = new Date();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    // 30 minutes ago for the event filter
+    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
 
     container.innerHTML = '';
 
     data.events.forEach(dayGroup => {
+      const dayDate = new Date(dayGroup.date + 'T12:00:00');
+
+      // Skip past days (before today)
+      if (dayDate < today) return;
+
+      const isToday = dayDate.toDateString() === today.toDateString();
+
       // Filter hidden calendars
-      const filteredEvents = dayGroup.events.filter(e => !this.hiddenCalendars.has(e.calendar));
+      let filteredEvents = dayGroup.events.filter(e => !this.hiddenCalendars.has(e.calendar));
+
+      // For today, filter out events that ended more than 30 minutes ago
+      if (isToday) {
+        filteredEvents = filteredEvents.filter(event => {
+          if (event.allDay) return true; // Keep all-day events
+
+          // Parse event end time
+          const eventEnd = new Date(event.end);
+
+          // Keep event if it hasn't ended yet, or ended less than 30 minutes ago
+          return eventEnd > thirtyMinutesAgo;
+        });
+      }
+
+      // Skip days with no events after filtering
       if (filteredEvents.length === 0) return;
 
-      const dayDate = new Date(dayGroup.date + 'T12:00:00');
       const dayEl = document.createElement('div');
       dayEl.className = 'calendar-day';
 
-      const isToday = dayDate.toDateString() === today.toDateString();
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
       const isTomorrow = dayDate.toDateString() === tomorrow.toDateString();

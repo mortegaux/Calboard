@@ -54,7 +54,20 @@ const DEFAULT_CONFIG = {
     showTodayBadge: true,
     calendarView: 'list',
     hiddenCalendars: [],
-    layout: 'default',
+    layout: {
+      grid: {
+        columns: 3,
+        gap: '15px',
+        minWidgetWidth: '280px'
+      },
+      sectionOrder: ['weather', 'calendar', 'widgets'],
+      panels: {
+        weatherWidth: '520px',
+        weatherMinWidth: '450px'
+      },
+      widgets: {},
+      mode: 'grid'
+    },
     screensaverEnabled: true,
     screensaverStart: '22:00',
     screensaverEnd: '07:00',
@@ -1295,6 +1308,11 @@ app.get('/api/admin/qrcode', ipWhitelistMiddleware, adminAuth, (req, res) => {
 // ============================================
 // Widget API Endpoints
 // ============================================
+
+// Get all widgets configuration
+app.get('/api/widgets', (req, res) => {
+  res.json(config.widgets || {});
+});
 
 // Built-in quotes database
 const QUOTES_DB = [
@@ -3657,6 +3675,75 @@ app.put('/api/admin/config', ipWhitelistMiddleware, adminLimiter, adminAuth, asy
         return res.status(400).json({ error: 'Refresh interval must be between 1 and 60 minutes' });
       }
       display.refreshIntervalMinutes = interval;
+    }
+
+    // Validate layout config
+    if (display.layout) {
+      const layout = display.layout;
+
+      // Validate grid settings
+      if (layout.grid) {
+        if (layout.grid.columns !== undefined) {
+          const columns = parseInt(layout.grid.columns);
+          if (isNaN(columns) || columns < 1 || columns > 6) {
+            return res.status(400).json({ error: 'Grid columns must be between 1 and 6' });
+          }
+          layout.grid.columns = columns;
+        }
+        if (layout.grid.gap && !/^\d+px$/.test(layout.grid.gap)) {
+          return res.status(400).json({ error: 'Grid gap must be in format "15px"' });
+        }
+        if (layout.grid.minWidgetWidth && !/^\d+px$/.test(layout.grid.minWidgetWidth)) {
+          return res.status(400).json({ error: 'Min widget width must be in format "280px"' });
+        }
+      }
+
+      // Validate section order
+      if (layout.sectionOrder) {
+        if (!Array.isArray(layout.sectionOrder)) {
+          return res.status(400).json({ error: 'Section order must be an array' });
+        }
+        const validSections = ['weather', 'calendar', 'widgets'];
+        for (const section of layout.sectionOrder) {
+          if (!validSections.includes(section)) {
+            return res.status(400).json({ error: `Invalid section: ${section}` });
+          }
+        }
+      }
+
+      // Validate widget positions
+      if (layout.widgets && typeof layout.widgets === 'object') {
+        for (const [widgetId, position] of Object.entries(layout.widgets)) {
+          if (position.column !== undefined) {
+            const col = parseInt(position.column);
+            if (isNaN(col) || col < 1) {
+              return res.status(400).json({ error: `Invalid column for widget ${widgetId}` });
+            }
+            position.column = col;
+          }
+          if (position.row !== undefined) {
+            const row = parseInt(position.row);
+            if (isNaN(row) || row < 1) {
+              return res.status(400).json({ error: `Invalid row for widget ${widgetId}` });
+            }
+            position.row = row;
+          }
+          if (position.colSpan !== undefined) {
+            const span = parseInt(position.colSpan);
+            if (isNaN(span) || span < 1 || span > 6) {
+              return res.status(400).json({ error: `Invalid colSpan for widget ${widgetId}` });
+            }
+            position.colSpan = span;
+          }
+          if (position.rowSpan !== undefined) {
+            const span = parseInt(position.rowSpan);
+            if (isNaN(span) || span < 1 || span > 4) {
+              return res.status(400).json({ error: `Invalid rowSpan for widget ${widgetId}` });
+            }
+            position.rowSpan = span;
+          }
+        }
+      }
     }
 
     // Handle password changes

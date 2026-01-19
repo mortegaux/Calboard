@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  calboard:
+    image: calboard:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: calboard
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      # Persist configuration across container updates
+      - ./config.json:/app/config.json
+      # Optional: Mount custom backgrounds
+      - ./public/backgrounds:/app/public/backgrounds
+
+    environment:
+      # Node environment
+      - NODE_ENV=production
+      # Optional: Override port (default: 3000)
+      # - PORT=3000
+
+    # Resource limits (adjust based on your Raspberry Pi)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/config', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); })"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+    # Network configuration
+    networks:
+      - calboard-network
+
+networks:
+  calboard-network:
+    driver: bridge
