@@ -511,51 +511,48 @@ body {
    ========================================== */
 
 .weather-details {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  padding-top: 25px;
-  margin-top: 25px;
+  display: flex;
+  gap: 8px;
+  padding-top: 20px;
+  margin-top: 20px;
   border-top: 1px solid var(--border-color);
 }
 
 .detail {
+  flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 6px;
-  padding: 16px 12px;
+  gap: 8px;
+  padding: 10px 12px;
   background: var(--bg-card);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
   transition: all var(--transition-base);
 }
 
 .detail:hover {
   background: var(--bg-card-hover);
-  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
   box-shadow: var(--shadow-sm);
 }
 
 .detail-icon {
-  font-size: 22px;
+  font-size: 20px;
   color: var(--accent-color);
   opacity: 0.9;
+  flex-shrink: 0;
 }
 
 .detail-label {
-  font-size: 11px;
-  opacity: 0.7;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-muted);
-  margin-top: 4px;
+  display: none;
 }
 
 .detail-value {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 /* ==========================================
