@@ -12,6 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body class="theme-dark">
   <!-- Connection Status -->
@@ -62,7 +63,7 @@
           <div class="forecast-day">
             <div class="forecast-label">Today</div>
             <div class="forecast-icon">--</div>
-            <div class="forecast-pop"><span class="drop-icon">💧</span> --%</div>
+            <div class="forecast-pop"><i class="material-icons drop-icon">water_drop</i> --%</div>
             <div class="forecast-temps">
               <span class="high">--°</span>
               <span class="low">--°</span>
@@ -73,22 +74,22 @@
         <!-- Weather Details -->
         <div class="weather-details">
           <div class="detail">
-            <span class="detail-icon">🌅</span>
+            <i class="material-icons detail-icon">wb_twilight</i>
             <span class="detail-label">Sunrise</span>
             <span class="detail-value" id="sunrise">--:--</span>
           </div>
           <div class="detail">
-            <span class="detail-icon">🌇</span>
+            <i class="material-icons detail-icon">nightlight</i>
             <span class="detail-label">Sunset</span>
             <span class="detail-value" id="sunset">--:--</span>
           </div>
           <div class="detail">
-            <span class="detail-icon">💨</span>
+            <i class="material-icons detail-icon">air</i>
             <span class="detail-label">Wind</span>
             <span class="detail-value" id="wind">-- mph</span>
           </div>
           <div class="detail">
-            <span class="detail-icon">💧</span>
+            <i class="material-icons detail-icon">water_drop</i>
             <span class="detail-label">Humidity</span>
             <span class="detail-value" id="humidity">--%</span>
           </div>
@@ -122,8 +123,8 @@
       <!-- Calendar Controls -->
       <div class="calendar-controls" id="calendar-controls">
         <div class="view-toggle">
-          <button class="view-btn active" data-view="list" title="List View">☰</button>
-          <button class="view-btn" data-view="week" title="Week View">📅</button>
+          <button class="view-btn active" data-view="list" title="List View"><i class="material-icons">view_list</i></button>
+          <button class="view-btn" data-view="week" title="Week View"><i class="material-icons">calendar_month</i></button>
         </div>
         <div class="calendar-filters" id="calendar-filters"></div>
       </div>
@@ -299,8 +300,8 @@
           </div>
           <div class="sleep-content">
             <div class="sleep-times">
-              <div class="sleep-time"><span class="sleep-icon">🌙</span> Bedtime: <span id="bedtime">22:00</span></div>
-              <div class="sleep-time"><span class="sleep-icon">☀️</span> Wake: <span id="waketime">06:00</span></div>
+              <div class="sleep-time"><i class="material-icons sleep-icon">bedtime</i> Bedtime: <span id="bedtime">22:00</span></div>
+              <div class="sleep-time"><i class="material-icons sleep-icon">wb_sunny</i> Wake: <span id="waketime">06:00</span></div>
             </div>
             <div class="sleep-reminder" id="sleep-reminder" style="display: none;">Time to wind down!</div>
           </div>

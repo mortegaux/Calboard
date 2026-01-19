@@ -6,19 +6,29 @@
    ========================================== */
 
 :root {
-  /* Dark theme (default) */
-  --bg-primary: #000;
-  --bg-secondary: rgba(0, 0, 0, 0.95);
-  --bg-panel: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5));
-  --bg-card: rgba(255, 255, 255, 0.05);
-  --text-primary: #fff;
-  --text-secondary: rgba(255, 255, 255, 0.8);
+  /* Dark theme (default) - Modern professional palette */
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #141827;
+  --bg-panel: linear-gradient(135deg, rgba(20, 24, 39, 0.95), rgba(10, 14, 26, 0.98));
+  --bg-card: rgba(255, 255, 255, 0.06);
+  --bg-card-hover: rgba(255, 255, 255, 0.09);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.87);
   --text-muted: rgba(255, 255, 255, 0.6);
-  --border-color: rgba(255, 255, 255, 0.1);
+  --border-color: rgba(255, 255, 255, 0.12);
   --accent-color: #4CAF50;
+  --accent-hover: #66BB6A;
   --error-color: #ef5350;
   --warning-color: #FF9800;
   --success-color: #4CAF50;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .theme-light {
@@ -75,6 +85,30 @@ body {
   font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background-color: var(--bg-primary);
   color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==========================================
+   Material Icons Styling
+   ========================================== */
+
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'liga';
 }
 
 /* ==========================================
@@ -448,7 +482,10 @@ body {
 }
 
 .drop-icon {
-  font-size: 10px;
+  font-size: 14px;
+  vertical-align: middle;
+  color: #64B5F6;
+  opacity: 0.9;
 }
 
 .forecast-temps {
@@ -475,20 +512,35 @@ body {
 
 .weather-details {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 15px;
-  padding-top: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding-top: 25px;
+  margin-top: 25px;
+  border-top: 1px solid var(--border-color);
 }
 
 .detail {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  padding: 16px 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-base);
+}
+
+.detail:hover {
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .detail-icon {
-  font-size: 18px;
+  font-size: 22px;
+  color: var(--accent-color);
+  opacity: 0.9;
 }
 
 .detail-label {
@@ -497,10 +549,11 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-muted);
+  margin-top: 4px;
 }
 
 .detail-value {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
 }
@@ -653,20 +706,35 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
-  padding: 8px 12px;
-  border-radius: 6px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
+  font-size: 0;
+  transition: all var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.view-btn .material-icons {
+  font-size: 20px;
 }
 
 .view-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-card-hover);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .view-btn.active {
   background: var(--accent-color);
   border-color: var(--accent-color);
+  color: #fff;
+  box-shadow: var(--shadow-md);
+}
+
+.view-btn.active .material-icons {
   color: #fff;
 }
 
@@ -1845,8 +1913,13 @@ body {
 .sleep-time {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 14px;
+}
+
+.sleep-icon {
+  font-size: 20px;
+  color: var(--accent-color);
 }
 
 .sleep-time span:last-child {
