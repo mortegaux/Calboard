@@ -76,9 +76,6 @@ class Calboard {
     // Set up calendar filters
     this.renderCalendarFilters();
 
-    // Set up view toggle
-    this.setupViewToggle();
-
     // Set up touch gestures
     if (this.config?.features?.touchGestures) {
       this.setupTouchGestures();
@@ -110,11 +107,8 @@ class Calboard {
         this.hiddenCalendars = new Set(JSON.parse(savedHidden));
       }
 
-      // Load current view from local storage
-      const savedView = localStorage.getItem('calboard_view');
-      if (savedView) {
-        this.currentView = savedView;
-      }
+      // Always use list view (week view removed for TV display)
+      this.currentView = 'list';
     } catch (err) {
       console.error('Failed to load config:', err);
       this.config = { display: {}, features: {}, accessibility: {} };
@@ -552,43 +546,16 @@ class Calboard {
     });
   }
 
-  setupViewToggle() {
-    const buttons = document.querySelectorAll('.view-btn');
-    buttons.forEach(btn => {
-      if (btn.dataset.view === this.currentView) {
-        btn.classList.add('active');
-      } else {
-        btn.classList.remove('active');
-      }
-
-      btn.addEventListener('click', (e) => {
-        const view = e.target.dataset.view;
-        this.currentView = view;
-        localStorage.setItem('calboard_view', view);
-
-        buttons.forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-
-        this.renderCalendar();
-      });
-    });
-  }
-
   renderCalendar() {
-    if (this.currentView === 'week') {
-      this.renderWeekView();
-    } else {
-      this.renderListView();
-    }
+    // Always render list view (week view removed for TV display)
+    this.renderListView();
   }
 
   renderListView() {
     const container = document.getElementById('calendar-section');
-    const weekView = document.getElementById('week-view');
     const data = this.calendarData;
 
     container.style.display = 'block';
-    weekView.style.display = 'none';
 
     if (!data || !data.events || data.events.length === 0) {
       container.innerHTML = '<div class="no-events">No upcoming events</div>';
@@ -807,25 +774,11 @@ class Calboard {
   }
 
   swipeLeft() {
-    // Could switch to week view or next day
-    if (this.currentView === 'list') {
-      this.currentView = 'week';
-      localStorage.setItem('calboard_view', 'week');
-      document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-      document.querySelector('.view-btn[data-view="week"]')?.classList.add('active');
-      this.renderCalendar();
-    }
+    // Swipe gestures disabled for TV display
   }
 
   swipeRight() {
-    // Could switch to list view or previous day
-    if (this.currentView === 'week') {
-      this.currentView = 'list';
-      localStorage.setItem('calboard_view', 'list');
-      document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-      document.querySelector('.view-btn[data-view="list"]')?.classList.add('active');
-      this.renderCalendar();
-    }
+    // Swipe gestures disabled for TV display
   }
 
   // ==========================================
