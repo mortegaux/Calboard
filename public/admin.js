@@ -776,6 +776,21 @@ class CalboardAdmin {
           </div>
         `;
 
+      case 'garbageDay':
+        const schedule = config.schedule || [];
+        return `
+          <div class="form-row">
+            <div class="form-group full-width">
+              <label>Garbage Schedule (JSON format)</label>
+              <textarea rows="6" class="widget-input" data-field="schedule" placeholder='[
+  {"type": "Trash", "day": "Monday", "color": "#4CAF50"},
+  {"type": "Recycling", "day": "Thursday", "color": "#2196F3"}
+]'>${JSON.stringify(schedule, null, 2)}</textarea>
+              <span class="help-text">Format: array of objects with type, day (Monday-Sunday), and color (hex code)</span>
+            </div>
+          </div>
+        `;
+
       default:
         // For widgets with hasConfig but no specific form yet
         if (widgetKey === 'chores' || widgetKey === 'packages' || widgetKey === 'medications' ||
@@ -783,7 +798,7 @@ class CalboardAdmin {
             widgetKey === 'tvSchedule' || widgetKey === 'photos' || widgetKey === 'photoFrame' ||
             widgetKey === 'energy' || widgetKey === 'messageBoard' || widgetKey === 'sharedLists' ||
             widgetKey === 'familyProfiles' || widgetKey === 'worldClocks' || widgetKey === 'eventCountdowns' ||
-            widgetKey === 'habitTracker' || widgetKey === 'trivia' || widgetKey === 'garbageDay' ||
+            widgetKey === 'habitTracker' || widgetKey === 'trivia' ||
             widgetKey === 'mealPlanner' || widgetKey === 'petFeeding' || widgetKey === 'plantWatering' ||
             widgetKey === 'budgetTracker') {
           return `
@@ -936,7 +951,7 @@ class CalboardAdmin {
         // Handle arrays (one per line)
         if (field === 'feeds' || field === 'items' || field === 'entities') {
           config[field] = input.value.split('\n').map(s => s.trim()).filter(s => s);
-        } else if (field === 'routes') {
+        } else if (field === 'routes' || field === 'schedule') {
           try {
             config[field] = JSON.parse(input.value || '[]');
           } catch {
