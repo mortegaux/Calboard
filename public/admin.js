@@ -778,15 +778,69 @@ class CalboardAdmin {
 
       case 'garbageDay':
         const schedule = config.schedule || [];
+        const scheduleItemsHtml = schedule.map((item, index) => `
+          <div class="garbage-schedule-item" data-index="${index}">
+            <input type="text" class="garbage-type" placeholder="Type (e.g., Trash)" value="${this.escapeHtml(item.type || '')}" />
+            <select class="garbage-day">
+              <option value="Monday" ${item.day === 'Monday' ? 'selected' : ''}>Monday</option>
+              <option value="Tuesday" ${item.day === 'Tuesday' ? 'selected' : ''}>Tuesday</option>
+              <option value="Wednesday" ${item.day === 'Wednesday' ? 'selected' : ''}>Wednesday</option>
+              <option value="Thursday" ${item.day === 'Thursday' ? 'selected' : ''}>Thursday</option>
+              <option value="Friday" ${item.day === 'Friday' ? 'selected' : ''}>Friday</option>
+              <option value="Saturday" ${item.day === 'Saturday' ? 'selected' : ''}>Saturday</option>
+              <option value="Sunday" ${item.day === 'Sunday' ? 'selected' : ''}>Sunday</option>
+            </select>
+            <input type="color" class="garbage-color" value="${item.color || '#4CAF50'}" />
+            <button type="button" class="btn-remove-garbage" title="Remove">✕</button>
+          </div>
+        `).join('');
+
         return `
           <div class="form-row">
             <div class="form-group full-width">
-              <label>Garbage Schedule (JSON format)</label>
-              <textarea rows="6" class="widget-input" data-field="schedule" placeholder='[
-  {"type": "Trash", "day": "Monday", "color": "#4CAF50"},
-  {"type": "Recycling", "day": "Thursday", "color": "#2196F3"}
-]'>${JSON.stringify(schedule, null, 2)}</textarea>
-              <span class="help-text">Format: array of objects with type, day (Monday-Sunday), and color (hex code)</span>
+              <label>Garbage Schedule</label>
+              <div class="garbage-config-mode">
+                <button type="button" class="btn-toggle-mode" data-mode="simple">Switch to Advanced (JSON)</button>
+              </div>
+
+              <!-- Simple Form Mode -->
+              <div class="garbage-simple-mode">
+                <div class="garbage-schedule-list" id="garbage-schedule-list-${widgetKey}">
+                  ${scheduleItemsHtml || '<div class="no-items-message">No items added yet</div>'}
+                </div>
+                <button type="button" class="btn-add-garbage">+ Add Item</button>
+              </div>
+
+              <!-- Advanced JSON Mode -->
+              <div class="garbage-advanced-mode" style="display: none;">
+                <textarea rows="8" class="widget-input garbage-json" data-field="schedule">${JSON.stringify(schedule, null, 2)}</textarea>
+                <details class="json-help">
+                  <summary>JSON Format Help</summary>
+                  <pre class="json-example">[
+  {
+    "type": "Trash",
+    "day": "Monday",
+    "color": "#4CAF50"
+  },
+  {
+    "type": "Recycling",
+    "day": "Thursday",
+    "color": "#2196F3"
+  },
+  {
+    "type": "Yard Waste",
+    "day": "Wednesday",
+    "color": "#8BC34A"
+  }
+]</pre>
+                  <p><strong>Fields:</strong></p>
+                  <ul>
+                    <li><code>type</code>: Name of collection (e.g., "Trash", "Recycling")</li>
+                    <li><code>day</code>: Day of week (Monday-Sunday)</li>
+                    <li><code>color</code>: Hex color code for display (e.g., "#4CAF50")</li>
+                  </ul>
+                </details>
+              </div>
             </div>
           </div>
         `;
@@ -871,6 +925,147 @@ class CalboardAdmin {
     filterCheckbox.addEventListener('change', () => {
       this.filterWidgets(searchInput.value);
     });
+
+    // Garbage day widget handlers
+    this.bindGarbageDayHandlers();
+  }
+
+  bindGarbageDayHandlers() {
+    // Toggle between simple and advanced mode
+    document.querySelectorAll('.btn-toggle-mode').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const button = e.target;
+        const widgetItem = button.closest('.widget-item');
+        const simpleMode = widgetItem.querySelector('.garbage-simple-mode');
+        const advancedMode = widgetItem.querySelector('.garbage-advanced-mode');
+        const currentMode = button.dataset.mode;
+
+        if (currentMode === 'simple') {
+          // Switch to advanced (JSON)
+          const schedule = this.collectGarbageScheduleFromForm(widgetItem);
+          const jsonTextarea = advancedMode.querySelector('.garbage-json');
+          jsonTextarea.value = JSON.stringify(schedule, null, 2);
+
+          simpleMode.style.display = 'none';
+          advancedMode.style.display = 'block';
+          button.textContent = 'Switch to Simple Form';
+          button.dataset.mode = 'advanced';
+        } else {
+          // Switch to simple form
+          try {
+            const jsonTextarea = advancedMode.querySelector('.garbage-json');
+            const schedule = JSON.parse(jsonTextarea.value || '[]');
+            this.renderGarbageScheduleItems(widgetItem, schedule);
+
+            simpleMode.style.display = 'block';
+            advancedMode.style.display = 'none';
+            button.textContent = 'Switch to Advanced (JSON)';
+            button.dataset.mode = 'simple';
+          } catch (err) {
+            alert('Invalid JSON format. Please fix the JSON before switching back to simple mode.');
+          }
+        }
+      });
+    });
+
+    // Add new garbage item
+    document.querySelectorAll('.btn-add-garbage').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const widgetItem = e.target.closest('.widget-item');
+        const list = widgetItem.querySelector('.garbage-schedule-list');
+        const noItemsMsg = list.querySelector('.no-items-message');
+        if (noItemsMsg) noItemsMsg.remove();
+
+        const index = list.children.length;
+        const itemHtml = `
+          <div class="garbage-schedule-item" data-index="${index}">
+            <input type="text" class="garbage-type" placeholder="Type (e.g., Trash)" value="" />
+            <select class="garbage-day">
+              <option value="Monday">Monday</option>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Wednesday">Wednesday</option>
+              <option value="Thursday">Thursday</option>
+              <option value="Friday">Friday</option>
+              <option value="Saturday">Saturday</option>
+              <option value="Sunday">Sunday</option>
+            </select>
+            <input type="color" class="garbage-color" value="#4CAF50" />
+            <button type="button" class="btn-remove-garbage" title="Remove">✕</button>
+          </div>
+        `;
+        list.insertAdjacentHTML('beforeend', itemHtml);
+        this.bindGarbageItemRemoveHandlers();
+        this.unsavedChanges = true;
+      });
+    });
+
+    this.bindGarbageItemRemoveHandlers();
+  }
+
+  bindGarbageItemRemoveHandlers() {
+    document.querySelectorAll('.btn-remove-garbage').forEach(btn => {
+      btn.replaceWith(btn.cloneNode(true)); // Remove old listeners
+    });
+
+    document.querySelectorAll('.btn-remove-garbage').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const item = e.target.closest('.garbage-schedule-item');
+        const list = item.closest('.garbage-schedule-list');
+        item.remove();
+
+        // Show message if no items left
+        if (list.children.length === 0) {
+          list.innerHTML = '<div class="no-items-message">No items added yet</div>';
+        }
+
+        this.unsavedChanges = true;
+      });
+    });
+  }
+
+  collectGarbageScheduleFromForm(widgetItem) {
+    const items = widgetItem.querySelectorAll('.garbage-schedule-item');
+    const schedule = [];
+
+    items.forEach(item => {
+      const type = item.querySelector('.garbage-type').value.trim();
+      const day = item.querySelector('.garbage-day').value;
+      const color = item.querySelector('.garbage-color').value;
+
+      if (type) { // Only add if type is not empty
+        schedule.push({ type, day, color });
+      }
+    });
+
+    return schedule;
+  }
+
+  renderGarbageScheduleItems(widgetItem, schedule) {
+    const list = widgetItem.querySelector('.garbage-schedule-list');
+
+    if (schedule.length === 0) {
+      list.innerHTML = '<div class="no-items-message">No items added yet</div>';
+      return;
+    }
+
+    list.innerHTML = schedule.map((item, index) => `
+      <div class="garbage-schedule-item" data-index="${index}">
+        <input type="text" class="garbage-type" placeholder="Type (e.g., Trash)" value="${this.escapeHtml(item.type || '')}" />
+        <select class="garbage-day">
+          <option value="Monday" ${item.day === 'Monday' ? 'selected' : ''}>Monday</option>
+          <option value="Tuesday" ${item.day === 'Tuesday' ? 'selected' : ''}>Tuesday</option>
+          <option value="Wednesday" ${item.day === 'Wednesday' ? 'selected' : ''}>Wednesday</option>
+          <option value="Thursday" ${item.day === 'Thursday' ? 'selected' : ''}>Thursday</option>
+          <option value="Friday" ${item.day === 'Friday' ? 'selected' : ''}>Friday</option>
+          <option value="Saturday" ${item.day === 'Saturday' ? 'selected' : ''}>Saturday</option>
+          <option value="Sunday" ${item.day === 'Sunday' ? 'selected' : ''}>Sunday</option>
+        </select>
+        <input type="color" class="garbage-color" value="${item.color || '#4CAF50'}" />
+        <button type="button" class="btn-remove-garbage" title="Remove">✕</button>
+      </div>
+    `).join('');
+
+    this.bindGarbageItemRemoveHandlers();
   }
 
   updateCategoryBadge(category) {
@@ -937,6 +1132,27 @@ class CalboardAdmin {
 
   collectWidgetConfig(widgetKey, item) {
     const config = { enabled: item.querySelector('.widget-toggle').checked };
+
+    // Special handling for garbage day widget
+    if (widgetKey === 'garbageDay') {
+      const advancedMode = item.querySelector('.garbage-advanced-mode');
+      const simpleMode = item.querySelector('.garbage-simple-mode');
+
+      if (advancedMode && advancedMode.style.display !== 'none') {
+        // In advanced mode - use JSON textarea
+        const jsonTextarea = item.querySelector('.garbage-json');
+        try {
+          config.schedule = JSON.parse(jsonTextarea.value || '[]');
+        } catch {
+          config.schedule = [];
+        }
+      } else {
+        // In simple mode - collect from form
+        config.schedule = this.collectGarbageScheduleFromForm(item);
+      }
+
+      return config;
+    }
 
     // Collect widget-specific configuration
     item.querySelectorAll('.widget-input').forEach(input => {

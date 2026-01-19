@@ -899,4 +899,192 @@ textarea::placeholder {
   .widget-description {
     font-size: 11px;
   }
+
+  .garbage-schedule-item {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}
+
+/* ==========================================
+   Garbage Day Widget Configuration
+   ========================================== */
+
+.garbage-config-mode {
+  margin-bottom: 12px;
+}
+
+.btn-toggle-mode {
+  background: rgba(33, 150, 243, 0.1);
+  border: 1px solid rgba(33, 150, 243, 0.3);
+  color: #2196F3;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.btn-toggle-mode:hover {
+  background: rgba(33, 150, 243, 0.2);
+  border-color: rgba(33, 150, 243, 0.5);
+}
+
+.garbage-schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.garbage-schedule-item {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 80px 40px;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.garbage-type,
+.garbage-day {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.garbage-type:focus,
+.garbage-day:focus {
+  outline: none;
+  border-color: #2196F3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.garbage-color {
+  width: 100%;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.garbage-color::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.garbage-color::-webkit-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
+
+.btn-remove-garbage {
+  background: rgba(244, 67, 54, 0.2);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  color: #ef5350;
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.btn-remove-garbage:hover {
+  background: rgba(244, 67, 54, 0.3);
+  border-color: rgba(244, 67, 54, 0.5);
+}
+
+.btn-add-garbage {
+  background: var(--accent-color);
+  border: none;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.btn-add-garbage:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.no-items-message {
+  text-align: center;
+  padding: 20px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.json-help {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.json-help summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64B5F6;
+  user-select: none;
+  padding: 4px 0;
+}
+
+.json-help summary:hover {
+  color: #90CAF9;
+}
+
+.json-example {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 12px;
+  margin: 12px 0;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #A5D6A7;
+}
+
+.json-help p {
+  margin: 8px 0;
+  font-size: 12px;
+}
+
+.json-help ul {
+  margin: 8px 0;
+  padding-left: 20px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.json-help code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #FFD54F;
 }
