@@ -673,6 +673,7 @@ textarea::placeholder {
 .category-icon {
   font-size: 24px;
   line-height: 1;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .category-title {
@@ -698,13 +699,13 @@ textarea::placeholder {
 }
 
 .category-chevron {
-  font-size: 20px;
+  font-size: 24px;
   transition: transform 0.3s;
   color: rgba(255, 255, 255, 0.5);
 }
 
 .widget-category.collapsed .category-chevron {
-  transform: rotate(-90deg);
+  transform: rotate(-180deg);
 }
 
 .category-widgets {
@@ -748,10 +749,15 @@ textarea::placeholder {
 }
 
 .widget-icon {
-  font-size: 20px;
+  font-size: 22px;
   line-height: 1;
   width: 24px;
   text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.widget-item.enabled .widget-icon {
+  color: #4CAF50;
 }
 
 .widget-info {
@@ -818,11 +824,10 @@ textarea::placeholder {
 }
 
 .config-expand-icon {
-  font-size: 18px;
+  font-size: 24px;
   color: rgba(255, 255, 255, 0.4);
   transition: transform 0.3s, color 0.2s;
   cursor: pointer;
-  padding: 4px;
 }
 
 .widget-item.has-config .config-expand-icon:hover {
@@ -830,7 +835,7 @@ textarea::placeholder {
 }
 
 .widget-item.config-expanded .config-expand-icon {
-  transform: rotate(180deg);
+  transform: rotate(-180deg);
   color: #4CAF50;
 }
 

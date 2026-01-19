@@ -4,136 +4,136 @@
 // Widget metadata for rendering the widgets tab
 const WIDGET_METADATA = {
   information: {
-    icon: '📰',
+    icon: 'newspaper',
     name: 'Information',
     widgets: {
-      news: { icon: '📰', name: 'News Feed', description: 'Display news from RSS feeds', hasConfig: true },
-      quotes: { icon: '💭', name: 'Quotes', description: 'Show inspirational quotes', hasConfig: true },
-      wordOfDay: { icon: '📖', name: 'Word of the Day', description: 'Learn a new word each day', hasConfig: false },
-      jokeOfDay: { icon: '😄', name: 'Joke of the Day', description: 'Daily humor', hasConfig: false },
-      onThisDay: { icon: '📅', name: 'On This Day', description: 'Historical events', hasConfig: false }
+      news: { icon: 'rss_feed', name: 'News Feed', description: 'Display news from RSS feeds', hasConfig: true },
+      quotes: { icon: 'format_quote', name: 'Quotes', description: 'Show inspirational quotes', hasConfig: true },
+      wordOfDay: { icon: 'menu_book', name: 'Word of the Day', description: 'Learn a new word each day', hasConfig: false },
+      jokeOfDay: { icon: 'sentiment_satisfied', name: 'Joke of the Day', description: 'Daily humor', hasConfig: false },
+      onThisDay: { icon: 'history_edu', name: 'On This Day', description: 'Historical events', hasConfig: false }
     }
   },
   environment: {
-    icon: '🌙',
+    icon: 'nights_stay',
     name: 'Environment',
     widgets: {
-      moonPhase: { icon: '🌙', name: 'Moon Phase', description: 'Current moon phase', hasConfig: false },
-      tides: { icon: '🌊', name: 'Tides', description: 'Tide predictions', hasConfig: true },
-      pollen: { icon: '🌸', name: 'Pollen Count', description: 'Allergy information', hasConfig: false },
-      uvIndex: { icon: '☀️', name: 'UV Index', description: 'UV radiation levels', hasConfig: false }
+      moonPhase: { icon: 'brightness_3', name: 'Moon Phase', description: 'Current moon phase', hasConfig: false },
+      tides: { icon: 'waves', name: 'Tides', description: 'Tide predictions', hasConfig: true },
+      pollen: { icon: 'local_florist', name: 'Pollen Count', description: 'Allergy information', hasConfig: false },
+      uvIndex: { icon: 'wb_sunny', name: 'UV Index', description: 'UV radiation levels', hasConfig: false }
     }
   },
   productivity: {
-    icon: '✅',
+    icon: 'check_circle',
     name: 'Productivity',
     widgets: {
-      tasks: { icon: '✅', name: 'Tasks', description: 'Todo lists and task management', hasConfig: true },
-      groceryList: { icon: '🛒', name: 'Grocery List', description: 'Shopping list', hasConfig: true },
-      chores: { icon: '🧹', name: 'Chores', description: 'Household tasks tracker', hasConfig: true },
-      packages: { icon: '📦', name: 'Package Tracking', description: 'Track deliveries', hasConfig: true },
-      medications: { icon: '💊', name: 'Medications', description: 'Medication reminders', hasConfig: true }
+      tasks: { icon: 'task_alt', name: 'Tasks', description: 'Todo lists and task management', hasConfig: true },
+      groceryList: { icon: 'shopping_cart', name: 'Grocery List', description: 'Shopping list', hasConfig: true },
+      chores: { icon: 'cleaning_services', name: 'Chores', description: 'Household tasks tracker', hasConfig: true },
+      packages: { icon: 'inventory_2', name: 'Package Tracking', description: 'Track deliveries', hasConfig: true },
+      medications: { icon: 'medication', name: 'Medications', description: 'Medication reminders', hasConfig: true }
     }
   },
   transportation: {
-    icon: '🚗',
+    icon: 'directions_car',
     name: 'Transportation',
     widgets: {
-      traffic: { icon: '🚗', name: 'Traffic', description: 'Real-time traffic conditions', hasConfig: true },
-      transit: { icon: '🚌', name: 'Public Transit', description: 'Bus and train times', hasConfig: true },
-      flights: { icon: '✈️', name: 'Flight Tracking', description: 'Track flights', hasConfig: true },
-      gasPrices: { icon: '⛽', name: 'Gas Prices', description: 'Local fuel prices', hasConfig: true }
+      traffic: { icon: 'traffic', name: 'Traffic', description: 'Real-time traffic conditions', hasConfig: true },
+      transit: { icon: 'directions_bus', name: 'Public Transit', description: 'Bus and train times', hasConfig: true },
+      flights: { icon: 'flight', name: 'Flight Tracking', description: 'Track flights', hasConfig: true },
+      gasPrices: { icon: 'local_gas_station', name: 'Gas Prices', description: 'Local fuel prices', hasConfig: true }
     }
   },
   finance: {
-    icon: '💰',
+    icon: 'account_balance',
     name: 'Finance',
     widgets: {
-      stocks: { icon: '📈', name: 'Stock Prices', description: 'Track stock market', hasConfig: true },
-      crypto: { icon: '₿', name: 'Cryptocurrency', description: 'Crypto prices', hasConfig: true },
-      currencyExchange: { icon: '💱', name: 'Currency Exchange', description: 'Exchange rates', hasConfig: true },
-      budgetTracker: { icon: '💰', name: 'Budget Tracker', description: 'Track spending', hasConfig: true }
+      stocks: { icon: 'show_chart', name: 'Stock Prices', description: 'Track stock market', hasConfig: true },
+      crypto: { icon: 'currency_bitcoin', name: 'Cryptocurrency', description: 'Crypto prices', hasConfig: true },
+      currencyExchange: { icon: 'currency_exchange', name: 'Currency Exchange', description: 'Exchange rates', hasConfig: true },
+      budgetTracker: { icon: 'account_balance_wallet', name: 'Budget Tracker', description: 'Track spending', hasConfig: true }
     }
   },
   entertainment: {
-    icon: '🎮',
+    icon: 'sports_esports',
     name: 'Entertainment',
     widgets: {
-      sports: { icon: '⚽', name: 'Sports Scores', description: 'Live scores and schedules', hasConfig: true },
-      spotify: { icon: '🎵', name: 'Spotify', description: 'Now playing', hasConfig: true },
-      tvSchedule: { icon: '📺', name: 'TV Schedule', description: 'Show reminders', hasConfig: true },
-      redditFeed: { icon: '🔴', name: 'Reddit Feed', description: 'Subreddit posts', hasConfig: true }
+      sports: { icon: 'sports_soccer', name: 'Sports Scores', description: 'Live scores and schedules', hasConfig: true },
+      spotify: { icon: 'library_music', name: 'Spotify', description: 'Now playing', hasConfig: true },
+      tvSchedule: { icon: 'tv', name: 'TV Schedule', description: 'Show reminders', hasConfig: true },
+      redditFeed: { icon: 'forum', name: 'Reddit Feed', description: 'Subreddit posts', hasConfig: true }
     }
   },
   media: {
-    icon: '🖼️',
+    icon: 'photo_library',
     name: 'Media',
     widgets: {
-      photos: { icon: '📷', name: 'Photo Gallery', description: 'Display photos', hasConfig: true },
-      photoFrame: { icon: '🖼️', name: 'Photo Frame Mode', description: 'Full-screen photo display', hasConfig: true }
+      photos: { icon: 'photo_camera', name: 'Photo Gallery', description: 'Display photos', hasConfig: true },
+      photoFrame: { icon: 'image', name: 'Photo Frame Mode', description: 'Full-screen photo display', hasConfig: true }
     }
   },
   smartHome: {
-    icon: '🏠',
+    icon: 'home',
     name: 'Smart Home',
     widgets: {
-      homeAssistant: { icon: '🏠', name: 'Home Assistant', description: 'Smart home controls', hasConfig: true },
-      energy: { icon: '⚡', name: 'Energy Monitor', description: 'Power usage', hasConfig: true }
+      homeAssistant: { icon: 'sensors', name: 'Home Assistant', description: 'Smart home controls', hasConfig: true },
+      energy: { icon: 'bolt', name: 'Energy Monitor', description: 'Power usage', hasConfig: true }
     }
   },
   social: {
-    icon: '💬',
+    icon: 'chat',
     name: 'Social',
     widgets: {
-      messageBoard: { icon: '💬', name: 'Message Board', description: 'Family messages', hasConfig: true },
-      sharedLists: { icon: '📝', name: 'Shared Lists', description: 'Collaborative lists', hasConfig: true },
-      familyProfiles: { icon: '👨‍👩‍👧‍👦', name: 'Family Profiles', description: 'Member info and schedules', hasConfig: true }
+      messageBoard: { icon: 'message', name: 'Message Board', description: 'Family messages', hasConfig: true },
+      sharedLists: { icon: 'playlist_add_check', name: 'Shared Lists', description: 'Collaborative lists', hasConfig: true },
+      familyProfiles: { icon: 'people', name: 'Family Profiles', description: 'Member info and schedules', hasConfig: true }
     }
   },
   system: {
-    icon: '🖥️',
+    icon: 'computer',
     name: 'System',
     widgets: {
-      systemStats: { icon: '🖥️', name: 'System Stats', description: 'CPU, memory, temperature', hasConfig: true }
+      systemStats: { icon: 'analytics', name: 'System Stats', description: 'CPU, memory, temperature', hasConfig: true }
     }
   },
   time: {
-    icon: '🕐',
+    icon: 'schedule',
     name: 'Time & Countdowns',
     widgets: {
-      worldClocks: { icon: '🌍', name: 'World Clocks', description: 'Multiple timezones', hasConfig: true },
-      eventCountdowns: { icon: '⏳', name: 'Event Countdowns', description: 'Count down to events', hasConfig: true },
-      pomodoroTimer: { icon: '🍅', name: 'Pomodoro Timer', description: 'Focus timer', hasConfig: true }
+      worldClocks: { icon: 'public', name: 'World Clocks', description: 'Multiple timezones', hasConfig: true },
+      eventCountdowns: { icon: 'hourglass_empty', name: 'Event Countdowns', description: 'Count down to events', hasConfig: true },
+      pomodoroTimer: { icon: 'timer', name: 'Pomodoro Timer', description: 'Focus timer', hasConfig: true }
     }
   },
   health: {
-    icon: '❤️',
+    icon: 'favorite',
     name: 'Health & Wellness',
     widgets: {
-      habitTracker: { icon: '✓', name: 'Habit Tracker', description: 'Track daily habits', hasConfig: true },
-      waterIntake: { icon: '💧', name: 'Water Intake', description: 'Hydration tracking', hasConfig: true },
-      sleepSchedule: { icon: '😴', name: 'Sleep Schedule', description: 'Bedtime reminders', hasConfig: true }
+      habitTracker: { icon: 'fact_check', name: 'Habit Tracker', description: 'Track daily habits', hasConfig: true },
+      waterIntake: { icon: 'water_drop', name: 'Water Intake', description: 'Hydration tracking', hasConfig: true },
+      sleepSchedule: { icon: 'bedtime', name: 'Sleep Schedule', description: 'Bedtime reminders', hasConfig: true }
     }
   },
   dailyContent: {
-    icon: '🎯',
+    icon: 'lightbulb',
     name: 'Daily Content',
     widgets: {
-      recipeOfDay: { icon: '🍳', name: 'Recipe of the Day', description: 'Daily cooking ideas', hasConfig: true },
-      affirmations: { icon: '✨', name: 'Affirmations', description: 'Positive daily messages', hasConfig: true },
-      horoscope: { icon: '♈', name: 'Horoscope', description: 'Daily horoscope', hasConfig: true },
-      trivia: { icon: '❓', name: 'Trivia', description: 'Fun facts and questions', hasConfig: true }
+      recipeOfDay: { icon: 'restaurant', name: 'Recipe of the Day', description: 'Daily cooking ideas', hasConfig: true },
+      affirmations: { icon: 'auto_awesome', name: 'Affirmations', description: 'Positive daily messages', hasConfig: true },
+      horoscope: { icon: 'stars', name: 'Horoscope', description: 'Daily horoscope', hasConfig: true },
+      trivia: { icon: 'quiz', name: 'Trivia', description: 'Fun facts and questions', hasConfig: true }
     }
   },
   homeManagement: {
-    icon: '🗑️',
+    icon: 'home_work',
     name: 'Home Management',
     widgets: {
-      garbageDay: { icon: '🗑️', name: 'Garbage Day', description: 'Trash and recycling schedule', hasConfig: true },
-      mealPlanner: { icon: '🍽️', name: 'Meal Planner', description: 'Weekly meal planning', hasConfig: true },
-      petFeeding: { icon: '🐾', name: 'Pet Feeding', description: 'Pet feeding schedule', hasConfig: true },
-      plantWatering: { icon: '🌱', name: 'Plant Watering', description: 'Plant care reminders', hasConfig: true },
-      laundryTimer: { icon: '👕', name: 'Laundry Timer', description: 'Washer/dryer timers', hasConfig: true }
+      garbageDay: { icon: 'delete', name: 'Garbage Day', description: 'Trash and recycling schedule', hasConfig: true },
+      mealPlanner: { icon: 'restaurant_menu', name: 'Meal Planner', description: 'Weekly meal planning', hasConfig: true },
+      petFeeding: { icon: 'pets', name: 'Pet Feeding', description: 'Pet feeding schedule', hasConfig: true },
+      plantWatering: { icon: 'eco', name: 'Plant Watering', description: 'Plant care reminders', hasConfig: true },
+      laundryTimer: { icon: 'local_laundry_service', name: 'Laundry Timer', description: 'Washer/dryer timers', hasConfig: true }
     }
   }
 };
@@ -371,10 +371,10 @@ class CalboardAdmin {
 
     category.innerHTML = `
       <div class="category-header">
-        <span class="category-icon">${categoryData.icon}</span>
+        <i class="material-icons category-icon">${categoryData.icon}</i>
         <span class="category-title">${categoryData.name}</span>
         <span class="category-badge ${enabledCount === 0 ? 'empty' : ''}">${enabledCount}</span>
-        <span class="category-chevron">▼</span>
+        <i class="material-icons category-chevron">expand_more</i>
       </div>
       <div class="category-widgets">
         ${Object.keys(categoryData.widgets).map(widgetKey =>
@@ -394,7 +394,7 @@ class CalboardAdmin {
       <div class="widget-item ${isEnabled ? 'enabled' : ''} ${widgetMeta.hasConfig ? 'has-config' : ''}"
            data-widget="${widgetKey}">
         <div class="widget-header">
-          <span class="widget-icon">${widgetMeta.icon}</span>
+          <i class="material-icons widget-icon">${widgetMeta.icon}</i>
           <div class="widget-info">
             <div class="widget-name">${widgetMeta.name}</div>
             <div class="widget-description">${widgetMeta.description}</div>
@@ -403,7 +403,7 @@ class CalboardAdmin {
             <input type="checkbox" class="widget-toggle" ${isEnabled ? 'checked' : ''}>
             <span class="toggle-slider"></span>
           </label>
-          <span class="config-expand-icon">▼</span>
+          <i class="material-icons config-expand-icon">expand_more</i>
         </div>
         ${widgetMeta.hasConfig ? `
           <div class="widget-config">
