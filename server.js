@@ -1689,8 +1689,8 @@ app.get('/api/widgets/news', async (req, res) => {
 
 // Calculate moon phase
 function getMoonPhase(date = new Date()) {
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
+  let year = date.getFullYear();
+  let month = date.getMonth() + 1;
   const day = date.getDate();
 
   let c, e, jd, b;
