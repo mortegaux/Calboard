@@ -9,7 +9,7 @@ class Calboard {
     this.refreshInterval = null;
     this.wakeLock = null;
     this.currentView = 'list';
-    this.hiddenCalendars = new Set();
+    this.hiddenProfiles = new Set();
     this.slideshowIndex = 0;
     this.slideshowInterval = null;
     this.isOnline = navigator.onLine;
@@ -105,9 +105,9 @@ class Calboard {
       this.config = await response.json();
 
       // Load hidden calendars from local storage
-      const savedHidden = localStorage.getItem('calboard_hidden_calendars');
+      const savedHidden = localStorage.getItem('calboard_hidden_profiles');
       if (savedHidden) {
-        this.hiddenCalendars = new Set(JSON.parse(savedHidden));
+        this.hiddenProfiles = new Set(JSON.parse(savedHidden));
       }
 
       // Always use list view (week view removed for TV display)
@@ -628,26 +628,26 @@ class Calboard {
 
   renderCalendarFilters() {
     const container = document.getElementById('calendar-filters');
-    if (!container || !this.config?.calendarNames) return;
+    if (!container || !this.config?.profiles) return;
 
-    container.innerHTML = this.config.calendarNames.map(cal => `
-      <label class="filter-item" style="--cal-color: ${cal.color}">
-        <input type="checkbox" ${!this.hiddenCalendars.has(cal.name) ? 'checked' : ''} data-calendar="${this.escapeHtml(cal.name)}">
-        <span class="filter-color" style="background-color: ${cal.color}"></span>
-        <span class="filter-name">${this.escapeHtml(cal.name)}</span>
+    container.innerHTML = this.config.profiles.map(profile => `
+      <label class="filter-item" style="--cal-color: ${profile.color}">
+        <input type="checkbox" ${!this.hiddenProfiles.has(profile.id) ? 'checked' : ''} data-profile-id="${this.escapeHtml(profile.id)}">
+        <span class="filter-color" style="background-color: ${profile.color}"></span>
+        <span class="filter-name">${this.escapeHtml(profile.name)}</span>
       </label>
     `).join('');
 
     // Bind filter events
     container.querySelectorAll('input[type="checkbox"]').forEach(input => {
       input.addEventListener('change', (e) => {
-        const calName = e.target.dataset.calendar;
+        const profileId = e.target.dataset.profileId;
         if (e.target.checked) {
-          this.hiddenCalendars.delete(calName);
+          this.hiddenProfiles.delete(profileId);
         } else {
-          this.hiddenCalendars.add(calName);
+          this.hiddenProfiles.add(profileId);
         }
-        localStorage.setItem('calboard_hidden_calendars', JSON.stringify([...this.hiddenCalendars]));
+        localStorage.setItem('calboard_hidden_profiles', JSON.stringify([...this.hiddenProfiles]));
         this.renderCalendar();
       });
     });
@@ -686,8 +686,8 @@ class Calboard {
 
       const isToday = dayDate.toDateString() === today.toDateString();
 
-      // Filter hidden calendars
-      let filteredEvents = dayGroup.events.filter(e => !this.hiddenCalendars.has(e.calendar));
+      // Filter hidden profiles
+      let filteredEvents = dayGroup.events.filter(e => !this.hiddenProfiles.has(e.profileId));
 
       // For today, filter out events that ended more than 30 minutes ago
       if (isToday) {
@@ -761,7 +761,7 @@ class Calboard {
     weekView.innerHTML = days.map(date => {
       const dateKey = date.toISOString().split('T')[0];
       const dayGroup = data?.events?.find(g => g.date === dateKey);
-      const events = dayGroup?.events?.filter(e => !this.hiddenCalendars.has(e.calendar)) || [];
+      const events = dayGroup?.events?.filter(e => !this.hiddenProfiles.has(e.profileId)) || [];
       const isToday = date.toDateString() === today.toDateString();
 
       return `

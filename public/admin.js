@@ -781,25 +781,48 @@ class CalboardAdmin {
   }
 
   renderCalendars() {
-    const container = document.getElementById('calendars-list');
-    const template = document.getElementById('calendar-template');
+    // Now renders profiles instead of flat calendars
+    const container = document.getElementById('profiles-list');
+    const profileTemplate = document.getElementById('profile-template');
+    const calendarTemplate = document.getElementById('calendar-template');
+
+    if (!container || !profileTemplate) return;
+
     container.innerHTML = '';
 
-    (this.config.calendars || []).forEach((cal, index) => {
-      const clone = template.content.cloneNode(true);
-      const item = clone.querySelector('.calendar-item');
+    (this.config.profiles || []).forEach((profile, profileIndex) => {
+      const profileClone = profileTemplate.content.cloneNode(true);
+      const profileItem = profileClone.querySelector('.profile-item');
 
-      item.dataset.index = index;
-      item.querySelector('.calendar-color-preview').style.backgroundColor = cal.color || '#4CAF50';
-      item.querySelector('.calendar-name').textContent = cal.name || 'Unnamed Calendar';
-      item.querySelector('.calendar-name-input').value = cal.name || '';
-      item.querySelector('.calendar-color-input').value = cal.color || '#4CAF50';
-      item.querySelector('.calendar-url-input').value = cal.url || '';
+      profileItem.dataset.profileId = profile.id;
+      profileItem.dataset.profileIndex = profileIndex;
+      profileItem.querySelector('.profile-color-preview').style.backgroundColor = profile.color || '#4CAF50';
+      profileItem.querySelector('.profile-name').textContent = profile.name || 'Unnamed Profile';
+      profileItem.querySelector('.profile-name-input').value = profile.name || '';
+      profileItem.querySelector('.profile-color-input').value = profile.color || '#4CAF50';
+      profileItem.querySelector('.profile-image-input').value = profile.image || '';
 
-      container.appendChild(clone);
+      const calendarCount = profile.calendars ? profile.calendars.length : 0;
+      profileItem.querySelector('.profile-calendar-count').textContent = `(${calendarCount} calendar${calendarCount !== 1 ? 's' : ''})`;
+
+      // Render calendars for this profile
+      const calendarsListContainer = profileItem.querySelector('.profile-calendars-list');
+      (profile.calendars || []).forEach((cal, calIndex) => {
+        const calClone = calendarTemplate.content.cloneNode(true);
+        const calItem = calClone.querySelector('.calendar-item');
+
+        calItem.dataset.calendarIndex = calIndex;
+        calItem.querySelector('.calendar-name-display').textContent = cal.name || 'Unnamed Calendar';
+        calItem.querySelector('.calendar-name-input').value = cal.name || '';
+        calItem.querySelector('.calendar-url-input').value = cal.url || '';
+
+        calendarsListContainer.appendChild(calClone);
+      });
+
+      container.appendChild(profileClone);
     });
 
-    this.bindCalendarEvents();
+    this.bindProfileEvents();
   }
 
   renderAdditionalLocations() {
@@ -1718,8 +1741,11 @@ class CalboardAdmin {
     // Reload button
     document.getElementById('reload-btn').addEventListener('click', () => this.reloadConfig());
 
-    // Add calendar button
-    document.getElementById('add-calendar-btn').addEventListener('click', () => this.addCalendar());
+    // Add profile button
+    const addProfileBtn = document.getElementById('add-profile-btn');
+    if (addProfileBtn) {
+      addProfileBtn.addEventListener('click', () => this.addProfile());
+    }
 
     // Add location button
     document.getElementById('add-location-btn').addEventListener('click', () => this.addLocation());
@@ -1770,9 +1796,37 @@ class CalboardAdmin {
     });
   }
 
-  bindCalendarEvents() {
-    // Toggle expand/collapse
-    document.querySelectorAll('.calendar-header').forEach(header => {
+  bindProfileEvents() {
+    // Toggle profile expand/collapse
+    document.querySelectorAll('.profile-header').forEach(header => {
+      header.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-profile-btn')) return;
+        const item = header.closest('.profile-item');
+        item.classList.toggle('expanded');
+      });
+    });
+
+    // Remove profile buttons
+    document.querySelectorAll('.remove-profile-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const item = e.target.closest('.profile-item');
+        const profileIndex = parseInt(item.dataset.profileIndex);
+        this.removeProfile(profileIndex);
+      });
+    });
+
+    // Add calendar to profile buttons
+    document.querySelectorAll('.add-calendar-to-profile-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const profileItem = e.target.closest('.profile-item');
+        const profileIndex = parseInt(profileItem.dataset.profileIndex);
+        this.addCalendarToProfile(profileIndex);
+      });
+    });
+
+    // Toggle calendar expand/collapse
+    document.querySelectorAll('.calendar-header-compact').forEach(header => {
       header.addEventListener('click', (e) => {
         if (e.target.classList.contains('remove-calendar-btn')) return;
         const item = header.closest('.calendar-item');
@@ -1783,41 +1837,61 @@ class CalboardAdmin {
     // Remove calendar buttons
     document.querySelectorAll('.remove-calendar-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const item = e.target.closest('.calendar-item');
-        const index = parseInt(item.dataset.index);
-        this.removeCalendar(index);
+        e.stopPropagation();
+        const calItem = e.target.closest('.calendar-item');
+        const profileItem = calItem.closest('.profile-item');
+        const profileIndex = parseInt(profileItem.dataset.profileIndex);
+        const calIndex = parseInt(calItem.dataset.calendarIndex);
+        this.removeCalendarFromProfile(profileIndex, calIndex);
       });
     });
 
     // Test calendar buttons
     document.querySelectorAll('.test-calendar-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const item = e.target.closest('.calendar-item');
-        const index = parseInt(item.dataset.index);
-        this.testCalendar(index);
+        const calItem = e.target.closest('.calendar-item');
+        const profileItem = calItem.closest('.profile-item');
+        const profileIndex = parseInt(profileItem.dataset.profileIndex);
+        const calIndex = parseInt(calItem.dataset.calendarIndex);
+        this.testCalendar(profileIndex, calIndex);
       });
     });
 
-    // Update preview on name/color change
+    // Update preview on profile name/color change
+    document.querySelectorAll('.profile-name-input').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const item = e.target.closest('.profile-item');
+        item.querySelector('.profile-name').textContent = e.target.value || 'Unnamed Profile';
+        this.markUnsavedChanges();
+      });
+    });
+
+    document.querySelectorAll('.profile-color-input').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const item = e.target.closest('.profile-item');
+        item.querySelector('.profile-color-preview').style.backgroundColor = e.target.value;
+        this.markUnsavedChanges();
+      });
+    });
+
+    document.querySelectorAll('.profile-image-input').forEach(input => {
+      input.addEventListener('change', () => {
+        this.markUnsavedChanges();
+      });
+    });
+
+    // Update calendar name preview
     document.querySelectorAll('.calendar-name-input').forEach(input => {
       input.addEventListener('input', (e) => {
         const item = e.target.closest('.calendar-item');
-        item.querySelector('.calendar-name').textContent = e.target.value || 'Unnamed Calendar';
-        this.unsavedChanges = true;
-      });
-    });
-
-    document.querySelectorAll('.calendar-color-input').forEach(input => {
-      input.addEventListener('input', (e) => {
-        const item = e.target.closest('.calendar-item');
-        item.querySelector('.calendar-color-preview').style.backgroundColor = e.target.value;
-        this.unsavedChanges = true;
+        item.querySelector('.calendar-name-display').textContent = e.target.value || 'Unnamed Calendar';
+        this.markUnsavedChanges();
       });
     });
 
     document.querySelectorAll('.calendar-url-input').forEach(input => {
       input.addEventListener('change', () => {
-        this.unsavedChanges = true;
+        this.markUnsavedChanges();
       });
     });
   }
@@ -1840,35 +1914,87 @@ class CalboardAdmin {
     });
   }
 
-  addCalendar() {
-    if (!this.config.calendars) {
-      this.config.calendars = [];
+  addProfile() {
+    if (!this.config.profiles) {
+      this.config.profiles = [];
     }
 
-    this.config.calendars.push({
-      name: 'New Calendar',
-      url: '',
-      color: this.getRandomColor()
-    });
+    const newProfile = {
+      id: `profile-${Date.now()}`,
+      name: 'New Profile',
+      color: this.getRandomColor(),
+      image: null,
+      calendars: []
+    };
 
+    this.config.profiles.push(newProfile);
     this.renderCalendars();
-    this.unsavedChanges = true;
+    this.markUnsavedChanges();
 
-    // Expand the new calendar
-    const items = document.querySelectorAll('.calendar-item');
+    // Expand the new profile
+    const items = document.querySelectorAll('.profile-item');
     const lastItem = items[items.length - 1];
     if (lastItem) {
       lastItem.classList.add('expanded');
-      lastItem.querySelector('.calendar-name-input').focus();
+      lastItem.querySelector('.profile-name-input').focus();
     }
   }
 
-  removeCalendar(index) {
-    if (confirm('Are you sure you want to remove this calendar?')) {
-      this.config.calendars.splice(index, 1);
+  removeProfile(profileIndex) {
+    const profile = this.config.profiles[profileIndex];
+    const calendarCount = profile.calendars ? profile.calendars.length : 0;
+    const message = calendarCount > 0
+      ? `Remove "${profile.name}" and its ${calendarCount} calendar(s)?`
+      : `Remove "${profile.name}"?`;
+
+    if (confirm(message)) {
+      this.config.profiles.splice(profileIndex, 1);
       this.renderCalendars();
-      this.unsavedChanges = true;
+      this.markUnsavedChanges();
     }
+  }
+
+  addCalendarToProfile(profileIndex) {
+    if (!this.config.profiles[profileIndex].calendars) {
+      this.config.profiles[profileIndex].calendars = [];
+    }
+
+    this.config.profiles[profileIndex].calendars.push({
+      name: 'New Calendar',
+      url: ''
+    });
+
+    this.renderCalendars();
+    this.markUnsavedChanges();
+
+    // Expand the new calendar
+    const profileItem = document.querySelectorAll('.profile-item')[profileIndex];
+    if (profileItem) {
+      profileItem.classList.add('expanded');
+      const calItems = profileItem.querySelectorAll('.calendar-item');
+      const lastCalItem = calItems[calItems.length - 1];
+      if (lastCalItem) {
+        lastCalItem.classList.add('expanded');
+        lastCalItem.querySelector('.calendar-name-input').focus();
+      }
+    }
+  }
+
+  removeCalendarFromProfile(profileIndex, calendarIndex) {
+    if (confirm('Remove this calendar?')) {
+      this.config.profiles[profileIndex].calendars.splice(calendarIndex, 1);
+      this.renderCalendars();
+      this.markUnsavedChanges();
+    }
+  }
+
+  // Legacy function - kept for backward compatibility
+  addCalendar() {
+    this.addProfile();
+  }
+
+  removeCalendar(index) {
+    this.removeProfile(index);
   }
 
   addLocation() {
@@ -1910,13 +2036,23 @@ class CalboardAdmin {
   }
 
   collectFormData() {
-    // Collect calendar data
-    const calendars = [];
-    document.querySelectorAll('.calendar-item').forEach(item => {
-      calendars.push({
-        name: item.querySelector('.calendar-name-input').value.trim(),
-        url: item.querySelector('.calendar-url-input').value.trim(),
-        color: item.querySelector('.calendar-color-input').value
+    // Collect profile data
+    const profiles = [];
+    document.querySelectorAll('.profile-item').forEach(profileItem => {
+      const calendars = [];
+      profileItem.querySelectorAll('.calendar-item').forEach(calItem => {
+        calendars.push({
+          name: calItem.querySelector('.calendar-name-input').value.trim(),
+          url: calItem.querySelector('.calendar-url-input').value.trim()
+        });
+      });
+
+      profiles.push({
+        id: profileItem.dataset.profileId,
+        name: profileItem.querySelector('.profile-name-input').value.trim(),
+        color: profileItem.querySelector('.profile-color-input').value,
+        image: profileItem.querySelector('.profile-image-input').value.trim() || null,
+        calendars: calendars
       });
     });
 
@@ -1956,7 +2092,7 @@ class CalboardAdmin {
         showAirQuality: document.getElementById('weather-show-aqi').checked,
         additionalLocations: additionalLocations
       },
-      calendars: calendars,
+      profiles: profiles,
       display: {
         daysToShow: parseInt(document.getElementById('display-days').value) || 7,
         refreshIntervalMinutes: parseInt(document.getElementById('display-refresh').value) || 5,
@@ -2094,8 +2230,15 @@ class CalboardAdmin {
     }
   }
 
-  async testCalendar(index) {
-    const item = document.querySelector(`.calendar-item[data-index="${index}"]`);
+  async testCalendar(profileIndex, calendarIndex) {
+    const profileItems = document.querySelectorAll('.profile-item');
+    const profileItem = profileItems[profileIndex];
+    if (!profileItem) return;
+
+    const calendarItems = profileItem.querySelectorAll('.calendar-item');
+    const item = calendarItems[calendarIndex];
+    if (!item) return;
+
     const resultEl = item.querySelector('.calendar-test-result');
     const testBtn = item.querySelector('.test-calendar-btn');
     const url = item.querySelector('.calendar-url-input').value.trim();

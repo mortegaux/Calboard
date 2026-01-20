@@ -37,7 +37,7 @@ const DEFAULT_CONFIG = {
     showPollenForecast: false,
     additionalLocations: []
   },
-  calendars: [],
+  profiles: [],
   display: {
     daysToShow: 7,
     refreshIntervalMinutes: 5,
@@ -53,7 +53,7 @@ const DEFAULT_CONFIG = {
     showEventCountdown: true,
     showTodayBadge: true,
     calendarView: 'list',
-    hiddenCalendars: [],
+    hiddenProfiles: [],
     layout: {
       grid: {
         columns: 3,
@@ -422,8 +422,64 @@ function isSetupComplete() {
   return false;
 }
 
+// Migrate old calendar structure to profile-based structure
+function migrateCalendarsToProfiles() {
+  // Check if config has old-style calendars array
+  if (config.calendars && Array.isArray(config.calendars) && config.calendars.length > 0) {
+    console.log('Migrating calendars to profile-based structure...');
+
+    // Create profiles from individual calendars
+    config.profiles = config.calendars.map((cal, index) => {
+      // Generate profile ID from calendar name
+      const profileId = cal.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+
+      return {
+        id: profileId || `profile-${index}`,
+        name: cal.name || `Profile ${index + 1}`,
+        color: cal.color || ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#F44336', '#00BCD4'][index % 6],
+        image: null,
+        calendars: [{
+          name: cal.name || `Calendar ${index + 1}`,
+          url: cal.url
+        }]
+      };
+    });
+
+    // Remove old calendars array
+    delete config.calendars;
+
+    // Migrate hiddenCalendars to hiddenProfiles
+    if (config.display?.hiddenCalendars) {
+      // Map old calendar names to profile IDs
+      config.display.hiddenProfiles = config.display.hiddenCalendars.map(calName => {
+        const profile = config.profiles.find(p => p.calendars.some(c => c.name === calName));
+        return profile ? profile.id : calName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      });
+      delete config.display.hiddenCalendars;
+    }
+
+    // Save migrated config
+    saveConfig(config);
+    console.log(`✓ Migrated ${config.profiles.length} calendars to profiles`);
+  }
+
+  // Ensure profiles array exists
+  if (!config.profiles) {
+    config.profiles = [];
+  }
+
+  // Ensure hiddenProfiles exists
+  if (!config.display) {
+    config.display = { ...DEFAULT_CONFIG.display };
+  }
+  if (!config.display.hiddenProfiles) {
+    config.display.hiddenProfiles = [];
+  }
+}
+
 // Initial load
 loadConfig();
+migrateCalendarsToProfiles();
 
 const PORT = config.server?.port || 3000;
 
@@ -1099,7 +1155,7 @@ app.get('/api/calendars', async (req, res) => {
     const events = [];
     const daysToShow = config.display?.daysToShow || 7;
 
-    if (!config.calendars || config.calendars.length === 0) {
+    if (!config.profiles || config.profiles.length === 0) {
       return res.json({ events: [], daysToShow });
     }
 
@@ -1108,20 +1164,30 @@ app.get('/api/calendars', async (req, res) => {
     const endDate = new Date(now);
     endDate.setDate(endDate.getDate() + daysToShow);
 
-    const calendarPromises = config.calendars.map(async (cal) => {
-      try {
-        if (!validateUrl(cal.url)) {
-          console.error(`Invalid calendar URL for ${cal.name}`);
-          return [];
-        }
-        const response = await fetch(cal.url);
-        const icsData = await response.text();
-        const calEvents = parseICS(icsData, cal.name, cal.color, now, endDate);
-        return calEvents;
-      } catch (err) {
-        console.error(`Error fetching calendar ${cal.name}:`, err.message);
-        return [];
-      }
+    // Process all calendars from all profiles
+    const calendarPromises = [];
+
+    config.profiles.forEach(profile => {
+      if (!profile.calendars || profile.calendars.length === 0) return;
+
+      profile.calendars.forEach(cal => {
+        calendarPromises.push((async () => {
+          try {
+            if (!validateUrl(cal.url)) {
+              console.error(`Invalid calendar URL for ${cal.name} (${profile.name})`);
+              return [];
+            }
+            const response = await fetch(cal.url);
+            const icsData = await response.text();
+            // Pass profile info to parseICS so events get profile color and ID
+            const calEvents = parseICS(icsData, cal.name, profile.color, now, endDate, profile.id, profile.name);
+            return calEvents;
+          } catch (err) {
+            console.error(`Error fetching calendar ${cal.name} (${profile.name}):`, err.message);
+            return [];
+          }
+        })());
+      });
     });
 
     const results = await Promise.all(calendarPromises);
@@ -1159,7 +1225,7 @@ app.get('/api/calendars', async (req, res) => {
 });
 
 // Parse ICS data
-function parseICS(icsData, calendarName, color, startDate, endDate) {
+function parseICS(icsData, calendarName, color, startDate, endDate, profileId, profileName) {
   const events = [];
 
   try {
@@ -1187,14 +1253,14 @@ function parseICS(icsData, calendarName, color, startDate, endDate) {
           const occurrenceEnd = new Date(occurrenceStart.getTime() +
             (duration ? duration.toSeconds() * 1000 : 0));
 
-          events.push(createEventObject(event, occurrenceStart, occurrenceEnd, calendarName, color));
+          events.push(createEventObject(event, occurrenceStart, occurrenceEnd, calendarName, color, profileId, profileName));
         }
       } else {
         const eventStart = event.startDate.toJSDate();
         const eventEnd = event.endDate ? event.endDate.toJSDate() : eventStart;
 
         if (eventStart <= endDate && eventEnd >= startDate) {
-          events.push(createEventObject(event, eventStart, eventEnd, calendarName, color));
+          events.push(createEventObject(event, eventStart, eventEnd, calendarName, color, profileId, profileName));
         }
       }
     });
@@ -1205,7 +1271,7 @@ function parseICS(icsData, calendarName, color, startDate, endDate) {
   return events;
 }
 
-function createEventObject(event, start, end, calendarName, color) {
+function createEventObject(event, start, end, calendarName, color, profileId, profileName) {
   const isAllDay = event.startDate.isDate;
   const title = sanitizeString(event.summary || 'Untitled Event', 200);
 
@@ -1234,6 +1300,8 @@ function createEventObject(event, start, end, calendarName, color) {
     durationFormatted: formatDuration(durationMinutes, isAllDay),
     calendar: sanitizeString(calendarName, 100),
     color: validateColor(color) ? color : '#4CAF50',
+    profileId: profileId,
+    profileName: sanitizeString(profileName, 100),
     location: event.location ? sanitizeString(event.location, 200) : null,
     eventType: eventType,
     description: null // Don't expose descriptions for privacy
@@ -1275,10 +1343,11 @@ app.get('/api/config', (req, res) => {
     display: config.display || DEFAULT_CONFIG.display,
     features: config.features || DEFAULT_CONFIG.features,
     accessibility: config.accessibility || DEFAULT_CONFIG.accessibility,
-    calendarCount: config.calendars?.length || 0,
-    calendarNames: (config.calendars || []).map(c => ({
-      name: sanitizeString(c.name, 100),
-      color: validateColor(c.color) ? c.color : '#4CAF50'
+    profiles: (config.profiles || []).map(p => ({
+      id: p.id,
+      name: sanitizeString(p.name, 100),
+      color: validateColor(p.color) ? p.color : '#4CAF50',
+      image: p.image || null
     })),
     weather: {
       showAlerts: config.weather?.showAlerts ?? true,
@@ -3645,17 +3714,37 @@ app.put('/api/admin/config', ipWhitelistMiddleware, adminLimiter, adminAuth, asy
       return res.status(400).json({ error: 'Invalid units' });
     }
 
-    // Validate calendars
-    if (newConfig.calendars) {
-      if (!Array.isArray(newConfig.calendars)) {
-        return res.status(400).json({ error: 'Calendars must be an array' });
+    // Validate profiles
+    if (newConfig.profiles) {
+      if (!Array.isArray(newConfig.profiles)) {
+        return res.status(400).json({ error: 'Profiles must be an array' });
       }
-      for (const cal of newConfig.calendars) {
-        if (cal.url && !validateUrl(cal.url)) {
-          return res.status(400).json({ error: `Invalid URL for calendar: ${cal.name}` });
+      for (const profile of newConfig.profiles) {
+        // Validate profile ID
+        if (!profile.id || typeof profile.id !== 'string') {
+          return res.status(400).json({ error: `Profile must have a valid ID` });
         }
-        if (cal.color && !validateColor(cal.color)) {
-          cal.color = '#4CAF50'; // Default to green if invalid
+        // Validate profile name
+        if (!profile.name || typeof profile.name !== 'string') {
+          return res.status(400).json({ error: `Profile ${profile.id} must have a name` });
+        }
+        // Validate and sanitize color
+        if (profile.color && !validateColor(profile.color)) {
+          profile.color = '#4CAF50'; // Default to green if invalid
+        }
+        // Validate calendars array
+        if (profile.calendars) {
+          if (!Array.isArray(profile.calendars)) {
+            return res.status(400).json({ error: `Calendars for profile ${profile.name} must be an array` });
+          }
+          for (const cal of profile.calendars) {
+            if (!cal.url) {
+              return res.status(400).json({ error: `Calendar in profile ${profile.name} missing URL` });
+            }
+            if (!validateUrl(cal.url)) {
+              return res.status(400).json({ error: `Invalid URL for calendar ${cal.name} in profile ${profile.name}` });
+            }
+          }
         }
       }
     }

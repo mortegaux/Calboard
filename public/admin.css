@@ -1349,3 +1349,176 @@ textarea::placeholder {
     margin-left: 0;
   }
 }
+
+/* ============================================
+   Profile & Calendar Styles
+   ============================================ */
+
+.profiles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.profile-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.profile-item:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.profile-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.profile-expand-icon {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.6);
+  transition: transform 0.3s ease;
+}
+
+.profile-item.expanded .profile-expand-icon {
+  transform: rotate(180deg);
+}
+
+.profile-color-preview {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.profile-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  flex: 1;
+}
+
+.profile-calendar-count {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.remove-profile-btn {
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.profile-header:hover .remove-profile-btn {
+  opacity: 1;
+}
+
+.profile-details {
+  display: none;
+  padding: 0 15px 15px 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.profile-item.expanded .profile-details {
+  display: block;
+}
+
+.profile-calendars-section {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.profile-calendars-section h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 12px 0;
+}
+
+.profile-calendars-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.calendar-item {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.calendar-header-compact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.calendar-header-compact:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.calendar-header-compact .material-icons {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.calendar-name-display {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  flex: 1;
+}
+
+.calendar-details-compact {
+  display: none;
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.calendar-item.expanded .calendar-details-compact {
+  display: block;
+}
+
+.add-calendar-to-profile-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.add-calendar-to-profile-btn .material-icons {
+  font-size: 18px;
+}
+
+/* Profile tab description */
+#tab-calendars h1 {
+  font-size: 28px;
+  margin: 0 0 10px 0;
+}
+
+#tab-calendars .tab-description {
+  margin: 0 0 30px 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  line-height: 1.5;
+}

@@ -122,13 +122,18 @@
 
       <!-- Calendars Tab -->
       <section class="tab-content" id="tab-calendars">
+        <h1>Profiles & Calendars</h1>
+        <p class="tab-description">Organize calendars into profiles. Each profile has a name, color, and optional image. All calendars in a profile will use the profile's color.</p>
+
         <div class="settings-section">
-          <h2>Calendars</h2>
+          <h2>Profiles</h2>
           <div class="settings-card">
-            <div id="calendars-list" class="calendars-list">
-              <!-- Calendar items will be added here dynamically -->
+            <div id="profiles-list" class="profiles-list">
+              <!-- Profile items will be added here dynamically -->
             </div>
-            <button type="button" class="btn btn-secondary" id="add-calendar-btn">+ Add Calendar</button>
+            <button type="button" class="btn btn-secondary" id="add-profile-btn">
+              <i class="material-icons">person_add</i> Add Profile
+            </button>
           </div>
         </div>
       </section>
@@ -519,22 +524,56 @@
   </div>
 
   <!-- Calendar Item Template -->
-  <template id="calendar-template">
-    <div class="calendar-item" data-index="">
-      <div class="calendar-header">
-        <div class="calendar-color-preview" style="background-color: #4CAF50;"></div>
-        <span class="calendar-name">Calendar Name</span>
-        <button type="button" class="btn btn-icon btn-danger remove-calendar-btn" title="Remove">×</button>
+  <template id="profile-template">
+    <div class="profile-item" data-profile-id="">
+      <div class="profile-header">
+        <i class="material-icons profile-expand-icon">expand_more</i>
+        <div class="profile-color-preview" style="background-color: #4CAF50;"></div>
+        <span class="profile-name">Profile Name</span>
+        <span class="profile-calendar-count">(0 calendars)</span>
+        <button type="button" class="btn btn-icon btn-danger remove-profile-btn" title="Remove Profile">×</button>
       </div>
-      <div class="calendar-details">
+      <div class="profile-details">
         <div class="form-row">
           <div class="form-group">
-            <label>Name</label>
-            <input type="text" class="calendar-name-input" placeholder="Calendar name">
+            <label>Profile Name</label>
+            <input type="text" class="profile-name-input" placeholder="e.g., Mike, Maddie, Family">
           </div>
           <div class="form-group">
             <label>Color</label>
-            <input type="color" class="calendar-color-input" value="#4CAF50">
+            <input type="color" class="profile-color-input" value="#4CAF50">
+          </div>
+          <div class="form-group">
+            <label>Image URL (optional)</label>
+            <input type="url" class="profile-image-input" placeholder="https://example.com/photo.jpg">
+          </div>
+        </div>
+
+        <div class="profile-calendars-section">
+          <h4>Calendars for this Profile</h4>
+          <div class="profile-calendars-list">
+            <!-- Calendars for this profile will be added here -->
+          </div>
+          <button type="button" class="btn btn-small btn-secondary add-calendar-to-profile-btn">
+            <i class="material-icons">add</i> Add Calendar
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="calendar-template">
+    <div class="calendar-item" data-calendar-index="">
+      <div class="calendar-header-compact">
+        <i class="material-icons">event</i>
+        <span class="calendar-name-display">Calendar Name</span>
+        <button type="button" class="btn btn-icon btn-danger remove-calendar-btn" title="Remove">×</button>
+      </div>
+      <div class="calendar-details-compact">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Calendar Name</label>
+            <input type="text" class="calendar-name-input" placeholder="e.g., Personal, Work, School">
           </div>
         </div>
         <div class="form-row">
