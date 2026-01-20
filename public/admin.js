@@ -658,6 +658,7 @@ class CalboardAdmin {
 
   async login(password) {
     try {
+      console.log('Attempting admin login...');
       const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -665,16 +666,23 @@ class CalboardAdmin {
         body: JSON.stringify({ password })
       });
 
+      console.log('Login response status:', response.status);
       const data = await response.json();
+      console.log('Login response data:', data);
 
       if (response.ok && data.success) {
+        console.log('Login successful, hiding modal...');
         this.hideLoginModal();
+        console.log('Loading config...');
         await this.loadConfig();
+        console.log('Config loaded successfully');
         return true;
       } else {
+        console.error('Login failed:', data.error);
         throw new Error(data.error || 'Login failed');
       }
     } catch (err) {
+      console.error('Login error:', err);
       throw err;
     }
   }

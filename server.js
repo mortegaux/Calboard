@@ -1060,33 +1060,40 @@ app.get('/api/admin/auth-required', (req, res) => {
 // Login endpoint
 app.post('/api/admin/login', ipWhitelistMiddleware, loginLimiter, async (req, res) => {
   try {
+    console.log('=== ADMIN LOGIN ATTEMPT ===');
     const { password } = req.body;
 
     if (!password || typeof password !== 'string') {
+      console.log('Login failed: No password provided');
       return res.status(400).json({ error: 'Password is required' });
     }
 
     const storedHash = config.admin?.passwordHash || config.admin?.password;
+    console.log('Stored hash exists:', !!storedHash);
 
     if (!storedHash) {
       // No password set, create session
+      console.log('No password configured, granting access');
       req.session.isAdmin = true;
       return res.json({ success: true });
     }
 
     const isValid = await verifyPassword(password, storedHash);
+    console.log('Password valid:', isValid);
 
     if (isValid) {
       // Migrate plain-text password to bcrypt if needed
       await migratePasswordIfNeeded(password);
 
-      // Regenerate session to prevent session fixation
-      req.session.regenerate((err) => {
+      // Set session directly instead of regenerating (can cause issues in Docker)
+      console.log('Creating admin session');
+      req.session.isAdmin = true;
+      req.session.save((err) => {
         if (err) {
-          console.error('Session regeneration error:', err);
-          return res.status(500).json({ error: 'Authentication failed' });
+          console.error('Session save error:', err);
+          return res.status(500).json({ error: 'Failed to create session' });
         }
-        req.session.isAdmin = true;
+        console.log('✓ Admin login successful');
         res.json({ success: true });
       });
     } else {
