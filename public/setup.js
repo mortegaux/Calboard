@@ -523,6 +523,8 @@ class SetupWizard {
     btn.textContent = 'Saving...';
 
     try {
+      console.log('Sending config:', JSON.stringify(this.config, null, 2));
+
       const response = await fetch('/api/setup/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -530,6 +532,7 @@ class SetupWizard {
       });
 
       const data = await response.json();
+      console.log('Server response:', data);
 
       if (!data.success) {
         throw new Error(data.error || 'Setup failed');
@@ -537,6 +540,7 @@ class SetupWizard {
 
       btn.disabled = false;
     } catch (err) {
+      console.error('Setup error:', err);
       alert('Setup failed: ' + err.message);
       btn.disabled = false;
       btn.textContent = 'Complete Setup';
