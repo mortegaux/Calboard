@@ -1,7 +1,7 @@
 {
   "name": "Calboard - Calendar & Weather Dashboard",
   "short_name": "Calboard",
-  "description": "A beautiful calendar and weather dashboard for Raspberry Pi displays",
+  "description": "A beautiful calendar and weather dashboard for any display",
   "start_url": "/",
   "display": "fullscreen",
   "orientation": "landscape",

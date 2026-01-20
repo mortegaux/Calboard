@@ -1,6 +1,6 @@
 # Calboard
 
-A beautiful calendar and weather dashboard designed for Raspberry Pi displays. Shows multiple linked calendars (ICS format) alongside current weather and forecasts in an easy-to-read dark theme interface.
+A beautiful calendar and weather dashboard for any display. Shows multiple linked calendars (ICS format) alongside current weather and forecasts in an easy-to-read dark theme interface. Perfect for wall-mounted tablets, spare monitors, or always-on displays.
 
 ![Dashboard Preview](docs/preview.png)
 
@@ -11,9 +11,10 @@ A beautiful calendar and weather dashboard designed for Raspberry Pi displays. S
 - **Multi-Calendar Support** - Display events from multiple ICS calendar sources
 - **Color-coded Events** - Each calendar has its own color for easy identification
 - **Auto-refresh** - Automatically updates weather and calendar data
-- **Responsive Design** - Works on various screen sizes
-- **Kiosk Mode** - Double-click to enter fullscreen mode with hidden cursor
-- **Customizable** - Background images, time format, and more
+- **Responsive Design** - Works on various screen sizes and devices
+- **Fullscreen Mode** - Double-click to enter fullscreen mode with hidden cursor
+- **Customizable** - Background images, time format, themes, and more
+- **Docker Support** - Easy deployment with Docker and Docker Compose
 - **Web Admin Interface** - Configure everything remotely via browser at `/admin`
 - **Setup Wizard** - Guided first-time setup experience
 

@@ -832,11 +832,34 @@ app.post('/api/setup/complete', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid longitude' });
     }
 
-    // Validate calendars
-    if (newConfig.calendars) {
-      for (const cal of newConfig.calendars) {
-        if (cal.url && !validateUrl(cal.url)) {
-          return res.status(400).json({ success: false, error: `Invalid URL for calendar: ${cal.name}` });
+    // Migrate old calendar structure to profiles if needed
+    if (newConfig.calendars && !newConfig.profiles) {
+      console.log('Migrating old calendar structure to profiles...');
+      newConfig.profiles = [{
+        id: 'profile-1',
+        name: 'Default',
+        color: '#4CAF50',
+        image: null,
+        visible: true,
+        calendars: newConfig.calendars.map((cal, idx) => ({
+          id: `cal-${idx + 1}`,
+          name: cal.name,
+          url: cal.url,
+          enabled: true
+        }))
+      }];
+      delete newConfig.calendars;
+    }
+
+    // Validate profiles and calendars
+    if (newConfig.profiles) {
+      for (const profile of newConfig.profiles) {
+        if (profile.calendars) {
+          for (const cal of profile.calendars) {
+            if (cal.url && !validateUrl(cal.url)) {
+              return res.status(400).json({ success: false, error: `Invalid URL for calendar: ${cal.name}` });
+            }
+          }
         }
       }
     }
@@ -2673,7 +2696,7 @@ app.get('/api/widgets/system', async (req, res) => {
       }
     }
 
-    // CPU temperature (Raspberry Pi)
+    // CPU temperature (Linux systems)
     if (widgets.systemStats.showTemp) {
       try {
         const temp = fs.readFileSync('/sys/class/thermal/thermal_zone0/temp', 'utf8');
@@ -4056,7 +4079,7 @@ function startServer() {
       const httpsPort = httpsConfig.port || 443;
       https.createServer(httpsOptions, app).listen(httpsPort, '0.0.0.0', () => {
         console.log(`Calboard HTTPS server running at https://localhost:${httpsPort}`);
-        console.log(`Secure access from other devices: https://<your-pi-ip>:${httpsPort}`);
+        console.log(`Secure access from other devices: https://<your-server-ip>:${httpsPort}`);
       });
 
       // Also start HTTP server to redirect to HTTPS
@@ -4079,7 +4102,7 @@ function startServer() {
   function startHTTPServer() {
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Calboard server running at http://localhost:${PORT}`);
-      console.log(`Access from other devices: http://<your-pi-ip>:${PORT}`);
+      console.log(`Access from other devices: http://<your-server-ip>:${PORT}`);
     });
   }
 

@@ -63,9 +63,9 @@ docker-compose up -d
 
 ## Deployment Options
 
-### Raspberry Pi Deployment
+### Linux Deployment
 
-#### Install Docker on Raspberry Pi
+#### Install Docker on Linux
 
 ```bash
 # Update system
@@ -88,8 +88,8 @@ sudo reboot
 #### Deploy Calboard
 
 ```bash
-# Clone or copy the project to your Pi
-cd /home/pi/calboard
+# Clone or copy the project
+cd /path/to/calboard
 
 # Build and run
 docker-compose up -d
@@ -97,7 +97,7 @@ docker-compose up -d
 # Set up autostart on boot (already configured with restart: unless-stopped)
 ```
 
-#### Enable Kiosk Mode on Pi
+#### Enable Kiosk Mode
 
 For automatic fullscreen display on boot:
 
@@ -105,15 +105,15 @@ For automatic fullscreen display on boot:
 # Install Chromium (if not already installed)
 sudo apt-get install chromium-browser -y
 
-# Edit autostart
-mkdir -p ~/.config/lxsession/LXDE-pi
-nano ~/.config/lxsession/LXDE-pi/autostart
+# Edit autostart (path may vary by Linux distribution)
+mkdir -p ~/.config/autostart
+nano ~/.config/autostart/calboard.desktop
 
 # Add these lines:
-@xset s off
-@xset -dpms
-@xset s noblank
-@chromium-browser --noerrdialogs --disable-infobars --kiosk http://localhost:3000
+[Desktop Entry]
+Type=Application
+Name=Calboard
+Exec=sh -c "sleep 5 && xset s off && xset -dpms && xset s noblank && chromium-browser --noerrdialogs --disable-infobars --kiosk http://localhost:3000"
 
 # Reboot to test
 sudo reboot
@@ -318,9 +318,9 @@ chmod 644 config.json
 chown $USER:$USER config.json
 ```
 
-### Memory Issues on Raspberry Pi
+### Memory Issues on Low-Resource Systems
 
-Edit `docker-compose.yml` to reduce memory:
+Edit `docker-compose.yml` to reduce memory on systems with limited RAM:
 
 ```yaml
 deploy:
@@ -372,7 +372,7 @@ docker stats calboard
 
 ## Multi-Platform Builds
 
-To build for different architectures (e.g., ARM for Raspberry Pi):
+To build for different architectures (e.g., ARM devices):
 
 ```bash
 # Enable buildx

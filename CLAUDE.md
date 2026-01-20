@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Calboard is a calendar and weather dashboard designed for Raspberry Pi displays. It's a single-server Node.js application that fetches ICS calendars and weather data, then serves a web interface for display in kiosk mode.
+Calboard is a calendar and weather dashboard designed for any display. It's a single-server Node.js application that fetches ICS calendars and weather data, then serves a web interface for display in kiosk mode.
 
 ## Development Commands
 
@@ -18,16 +18,23 @@ The application provides test endpoints during setup:
 - POST `/api/setup/test-weather` - Test OpenWeatherMap API connection
 - POST `/api/setup/test-calendar` - Test ICS calendar URL validity
 
-### Running on Raspberry Pi
-The server runs on port 3000 by default (configurable in `config.json`). For kiosk mode:
+### Running in Fullscreen Mode
+The server runs on port 3000 by default (configurable in `config.json`). For kiosk/fullscreen mode:
 ```bash
+# Linux
 chromium-browser --noerrdialogs --disable-infobars --kiosk http://localhost:3000
+
+# Windows
+chrome.exe --kiosk http://localhost:3000
+
+# Mac
+open -a "Google Chrome" --args --kiosk http://localhost:3000
 ```
 
 ## Architecture
 
 ### Single-Server Architecture
-The entire application runs in a single `server.js` file (~3800+ lines). This is intentional for simplicity and ease of deployment on Raspberry Pi devices.
+The entire application runs in a single `server.js` file (~3800+ lines). This is intentional for simplicity and ease of deployment on any device or server.
 
 **Key architectural components:**
 
@@ -165,7 +172,7 @@ The `config.json` has five main sections:
 - Admin endpoints require authentication to view/modify sensitive config
 
 **Deployment Notes:**
-- Designed for local network use (Raspberry Pi on home network)
+- Designed for local network use (home or office network)
 - For internet exposure, use reverse proxy (Nginx) with SSL
 - Set admin password immediately after first setup
 - Keep Node.js and npm packages updated (`npm audit`)
@@ -208,7 +215,7 @@ If adding new config fields:
 
 ## Design Philosophy
 
-**Simplicity:** Single-file server for easy deployment and maintenance on Raspberry Pi.
+**Simplicity:** Single-file server for easy deployment and maintenance on any device.
 
 **No Build Process:** Frontend uses vanilla JavaScript, no bundlers or transpilers.
 

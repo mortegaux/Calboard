@@ -36,7 +36,7 @@ services:
       # Set to 'true' if you see HTTPS redirect issues
       - DISABLE_HSTS=true
 
-    # Resource limits (adjust based on your Raspberry Pi)
+    # Resource limits (adjust based on your system)
     deploy:
       resources:
         limits:

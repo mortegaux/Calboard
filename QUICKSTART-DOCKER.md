@@ -80,20 +80,31 @@ docker-compose up -d
 docker-compose ps
 ```
 
-## Raspberry Pi Kiosk Mode
+## Fullscreen Display Mode
 
-After deploying, set up auto-start:
+After deploying, set up auto-start in kiosk mode:
 
+### Linux Desktop
 ```bash
 # Edit autostart
-mkdir -p ~/.config/lxsession/LXDE-pi
-nano ~/.config/lxsession/LXDE-pi/autostart
+mkdir -p ~/.config/autostart
+nano ~/.config/autostart/calboard.desktop
 
 # Add:
-@chromium-browser --noerrdialogs --disable-infobars --kiosk http://localhost:3000
+[Desktop Entry]
+Type=Application
+Name=Calboard
+Exec=chromium-browser --noerrdialogs --disable-infobars --kiosk http://localhost:3000
 
 # Reboot
 sudo reboot
+```
+
+### Windows
+Add to startup folder:
+`shell:startup` → Create shortcut:
+```
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk http://localhost:3000
 ```
 
 ## Configuration

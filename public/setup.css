@@ -349,6 +349,35 @@ select {
   color: #ef5350;
 }
 
+/* Profile Entries */
+#profiles-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.profile-entry {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.profile-entry-header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.profile-entry-header .profile-name {
+  flex: 1;
+}
+
+.profile-entry-header .profile-color {
+  width: 44px;
+}
+
 /* Calendar Entries */
 #calendars-container {
   display: flex;
@@ -368,6 +397,11 @@ select {
   display: flex;
   gap: 10px;
   margin-bottom: 10px;
+}
+
+.calendar-entry-header .calendar-profile {
+  flex: 1;
+  min-width: 150px;
 }
 
 .calendar-entry-header .calendar-name {

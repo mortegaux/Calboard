@@ -31,16 +31,21 @@
         <div class="step-line"></div>
         <div class="step" data-step="4">
           <div class="step-number">4</div>
-          <div class="step-label">Calendars</div>
+          <div class="step-label">Profiles</div>
         </div>
         <div class="step-line"></div>
         <div class="step" data-step="5">
           <div class="step-number">5</div>
-          <div class="step-label">Display</div>
+          <div class="step-label">Calendars</div>
         </div>
         <div class="step-line"></div>
         <div class="step" data-step="6">
           <div class="step-number">6</div>
+          <div class="step-label">Display</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" data-step="7">
+          <div class="step-number">7</div>
           <div class="step-label">Security</div>
         </div>
       </div>
@@ -54,7 +59,7 @@
         <div class="step-icon">&#128197;</div>
         <h1>Welcome to Calboard</h1>
         <p class="step-description">
-          Your personal calendar and weather dashboard for Raspberry Pi.
+          Your personal calendar and weather dashboard for any display.
           <br><br>
           This wizard will help you configure your dashboard in just a few steps.
         </p>
@@ -140,12 +145,29 @@
         </div>
       </div>
 
-      <!-- Step 4: Calendars -->
+      <!-- Step 4: Profiles -->
       <div class="wizard-step" data-step="4">
+        <div class="step-icon">&#128100;</div>
+        <h1>Create Profiles</h1>
+        <p class="step-description">
+          Create profiles for family members or categories. Each profile can have multiple calendars.
+        </p>
+        <div class="form-section">
+          <div id="profiles-container">
+            <!-- Profile entries will be added here -->
+          </div>
+          <button type="button" class="btn btn-secondary" id="add-profile">
+            <span class="btn-icon">+</span> Add Profile
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 5: Calendars -->
+      <div class="wizard-step" data-step="5">
         <div class="step-icon">&#128197;</div>
         <h1>Add Calendars</h1>
         <p class="step-description">
-          Add your calendar feeds (ICS format). You can add more later from the admin panel.
+          Add calendar feeds (ICS format) to your profiles. You can add more later from the admin panel.
         </p>
         <div class="form-section">
           <div id="calendars-container">
@@ -187,8 +209,8 @@
         </div>
       </div>
 
-      <!-- Step 5: Display Settings -->
-      <div class="wizard-step" data-step="5">
+      <!-- Step 6: Display Settings -->
+      <div class="wizard-step" data-step="6">
         <div class="step-icon">&#128187;</div>
         <h1>Display Preferences</h1>
         <p class="step-description">
@@ -238,8 +260,8 @@
         </div>
       </div>
 
-      <!-- Step 6: Security -->
-      <div class="wizard-step" data-step="6">
+      <!-- Step 7: Security -->
+      <div class="wizard-step" data-step="7">
         <div class="step-icon">&#128274;</div>
         <h1>Secure Your Dashboard</h1>
         <p class="step-description">
@@ -306,12 +328,25 @@
     </div>
   </div>
 
+  <!-- Profile Template -->
+  <template id="profile-template">
+    <div class="profile-entry">
+      <div class="profile-entry-header">
+        <input type="text" class="profile-name" placeholder="Profile name (e.g., John)">
+        <input type="color" class="profile-color" value="#4CAF50">
+        <button type="button" class="btn-remove" title="Remove">×</button>
+      </div>
+    </div>
+  </template>
+
   <!-- Calendar Template -->
   <template id="calendar-template">
     <div class="calendar-entry">
       <div class="calendar-entry-header">
+        <select class="calendar-profile">
+          <option value="">Select Profile</option>
+        </select>
         <input type="text" class="calendar-name" placeholder="Calendar name (e.g., Work)">
-        <input type="color" class="calendar-color" value="#4CAF50">
         <button type="button" class="btn-remove" title="Remove">×</button>
       </div>
       <div class="calendar-entry-body">

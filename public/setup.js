@@ -3,7 +3,8 @@
 class SetupWizard {
   constructor() {
     this.currentStep = 1;
-    this.totalSteps = 6;
+    this.totalSteps = 7;
+    this.profiles = [];
     this.config = {
       weather: {
         apiKey: '',
@@ -11,13 +12,14 @@ class SetupWizard {
         longitude: 0,
         units: 'imperial'
       },
-      calendars: [],
+      profiles: [],
       display: {
         daysToShow: 7,
         refreshIntervalMinutes: 5,
         timeFormat: '12h',
         dateFormat: 'en-US',
-        backgroundImage: null
+        backgroundImage: null,
+        calendarView: 'timeline'
       },
       server: {
         port: 3000
@@ -46,6 +48,9 @@ class SetupWizard {
 
     // Test weather
     document.getElementById('test-weather').addEventListener('click', () => this.testWeather());
+
+    // Add profile
+    document.getElementById('add-profile').addEventListener('click', () => this.addProfile());
 
     // Add calendar
     document.getElementById('add-calendar').addEventListener('click', () => this.addCalendar());
@@ -160,15 +165,19 @@ class SetupWizard {
         this.showValidation('location-validation', '', '');
         return true;
 
-      case 4: // Calendars
+      case 4: // Profiles
+        // Profiles are optional but recommended
+        return true;
+
+      case 5: // Calendars
         // Calendars are optional, so always valid
         return true;
 
-      case 5: // Display
+      case 6: // Display
         // Always valid
         return true;
 
-      case 6: // Security
+      case 7: // Security
         const password = document.getElementById('admin-password').value;
         const confirm = document.getElementById('confirm-password').value;
         if (password && password.length < 8) {
@@ -199,33 +208,89 @@ class SetupWizard {
         break;
 
       case 4:
-        this.collectCalendars();
+        this.collectProfiles();
         break;
 
       case 5:
+        this.collectCalendars();
+        break;
+
+      case 6:
         this.config.display.daysToShow = parseInt(document.getElementById('days-to-show').value);
         this.config.display.refreshIntervalMinutes = parseInt(document.getElementById('refresh-interval').value);
         this.config.display.timeFormat = document.getElementById('time-format').value;
         this.config.display.dateFormat = document.getElementById('date-format').value;
         break;
 
-      case 6:
+      case 7:
         const password = document.getElementById('admin-password').value;
         this.config.admin.password = password || null;
         break;
     }
   }
 
+  collectProfiles() {
+    this.profiles = [];
+    document.querySelectorAll('.profile-entry').forEach((entry, index) => {
+      const name = entry.querySelector('.profile-name').value.trim();
+      const color = entry.querySelector('.profile-color').value;
+
+      if (name) {
+        this.profiles.push({
+          id: `profile-${index + 1}`,
+          name: name,
+          color: color,
+          image: null,
+          visible: true,
+          calendars: []
+        });
+      }
+    });
+
+    // Update profile dropdowns in calendar section
+    this.updateProfileDropdowns();
+  }
+
   collectCalendars() {
-    this.config.calendars = [];
-    document.querySelectorAll('.calendar-entry').forEach(entry => {
+    // Reset calendars in all profiles
+    this.profiles.forEach(p => p.calendars = []);
+
+    document.querySelectorAll('.calendar-entry').forEach((entry, index) => {
+      const profileId = entry.querySelector('.calendar-profile').value;
       const name = entry.querySelector('.calendar-name').value.trim();
       const url = entry.querySelector('.calendar-url').value.trim();
-      const color = entry.querySelector('.calendar-color').value;
 
-      if (name && url) {
-        this.config.calendars.push({ name, url, color });
+      if (name && url && profileId) {
+        const profile = this.profiles.find(p => p.id === profileId);
+        if (profile) {
+          profile.calendars.push({
+            id: `cal-${index + 1}`,
+            name: name,
+            url: url,
+            enabled: true
+          });
+        }
       }
+    });
+
+    this.config.profiles = this.profiles;
+  }
+
+  updateProfileDropdowns() {
+    const selects = document.querySelectorAll('.calendar-profile');
+    selects.forEach(select => {
+      const currentValue = select.value;
+      select.innerHTML = '<option value="">Select Profile</option>';
+
+      this.profiles.forEach(profile => {
+        const option = document.createElement('option');
+        option.value = profile.id;
+        option.textContent = profile.name;
+        if (profile.id === currentValue) {
+          option.selected = true;
+        }
+        select.appendChild(option);
+      });
     });
   }
 
@@ -329,7 +394,26 @@ class SetupWizard {
   }
 
   addInitialCalendar() {
-    this.addCalendar();
+    // Don't add initial calendar - wait for profiles first
+  }
+
+  addProfile() {
+    const container = document.getElementById('profiles-container');
+    const template = document.getElementById('profile-template');
+    const clone = template.content.cloneNode(true);
+
+    // Assign random color
+    const colors = ['#4CAF50', '#9C27B0', '#2196F3', '#FF9800', '#E91E63', '#00BCD4'];
+    const colorInput = clone.querySelector('.profile-color');
+    colorInput.value = colors[container.children.length % colors.length];
+
+    // Bind remove button
+    const removeBtn = clone.querySelector('.btn-remove');
+    removeBtn.addEventListener('click', (e) => {
+      e.target.closest('.profile-entry').remove();
+    });
+
+    container.appendChild(clone);
   }
 
   addCalendar() {
@@ -337,10 +421,15 @@ class SetupWizard {
     const template = document.getElementById('calendar-template');
     const clone = template.content.cloneNode(true);
 
-    // Assign random color
-    const colors = ['#4CAF50', '#9C27B0', '#2196F3', '#FF9800', '#E91E63', '#00BCD4'];
-    const colorInput = clone.querySelector('.calendar-color');
-    colorInput.value = colors[container.children.length % colors.length];
+    // Populate profile dropdown
+    const profileSelect = clone.querySelector('.calendar-profile');
+    profileSelect.innerHTML = '<option value="">Select Profile</option>';
+    this.profiles.forEach(profile => {
+      const option = document.createElement('option');
+      option.value = profile.id;
+      option.textContent = profile.name;
+      profileSelect.appendChild(option);
+    });
 
     // Bind remove button
     const removeBtn = clone.querySelector('.btn-remove');
@@ -462,7 +551,9 @@ class SetupWizard {
 
     // Calendars
     const calendarsEl = document.getElementById('summary-calendars');
-    calendarsEl.textContent = this.config.calendars.length;
+    let totalCalendars = 0;
+    this.profiles.forEach(p => totalCalendars += p.calendars.length);
+    calendarsEl.textContent = totalCalendars;
 
     // Security
     const securityEl = document.getElementById('summary-security');
