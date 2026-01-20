@@ -702,10 +702,10 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    secure: false, // Set to false to allow HTTP (for local network/Docker deployments)
     httpOnly: true, // Prevent XSS access to cookie
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: 'strict' // CSRF protection
+    sameSite: 'lax' // Changed from 'strict' to 'lax' for better compatibility
   }
 }));
 
