@@ -1313,16 +1313,98 @@ body {
     flex-direction: column;
   }
 
+  /* MOBILE OPTIMIZATION: Calendar first, weather second */
   .left-panel {
     width: 100%;
     min-width: 100%;
     height: auto;
-    min-height: 400px;
+    min-height: auto;
+    order: 2; /* Show after calendar */
   }
 
   .right-panel {
     height: auto;
     flex: 1;
+    order: 1; /* Show calendar first */
+    margin-bottom: 20px;
+  }
+
+  /* Compact weather section on mobile */
+  .weather-section {
+    padding: 15px 20px;
+  }
+
+  .time-display {
+    margin-bottom: 10px;
+  }
+
+  .time {
+    font-size: 48px;
+  }
+
+  .seconds {
+    font-size: 18px;
+  }
+
+  .date-display {
+    font-size: 14px;
+    margin-bottom: 15px;
+  }
+
+  .current-weather {
+    margin-bottom: 15px;
+  }
+
+  .temp-value {
+    font-size: 42px;
+  }
+
+  .weather-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  /* Compact forecast */
+  .forecast {
+    gap: 8px;
+  }
+
+  .forecast-day {
+    padding: 8px;
+  }
+
+  /* Hide less important weather details on mobile */
+  .feels-like {
+    font-size: 13px;
+  }
+
+  .air-quality {
+    display: none; /* Hide AQI on mobile */
+  }
+
+  .additional-locations {
+    display: none; /* Hide additional locations on mobile */
+  }
+
+  .weather-details {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .detail {
+    padding: 8px;
+  }
+
+  .detail-icon {
+    font-size: 18px;
+  }
+
+  .detail-label {
+    font-size: 11px;
+  }
+
+  .detail-value {
+    font-size: 13px;
   }
 
   .week-view {
@@ -1337,28 +1419,60 @@ body {
 }
 
 @media (max-width: 600px) {
+  /* Even more compact for small phones */
   .weather-section {
-    padding: 20px;
+    padding: 12px 15px;
   }
 
   .right-panel {
-    padding: 20px;
+    padding: 15px;
   }
 
+  /* Smaller time on phones */
   .time {
-    font-size: 56px;
+    font-size: 36px;
   }
 
   .seconds {
-    font-size: 20px;
+    font-size: 14px;
   }
 
+  /* Smaller temp on phones */
   .temp-value {
-    font-size: 48px;
+    font-size: 32px;
+  }
+
+  .weather-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  /* Hide forecast on phones to save space */
+  .forecast {
+    display: none;
+  }
+
+  /* Hide "Coming Up" countdowns on phones */
+  #countdowns {
+    display: none !important;
   }
 
   .week-view {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr; /* Single column on phones */
+  }
+
+  /* Larger touch targets for calendar events */
+  .event {
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .event-time {
+    font-size: 14px;
+  }
+
+  .event-title {
+    font-size: 15px;
   }
 }
 
