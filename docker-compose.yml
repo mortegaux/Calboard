@@ -24,13 +24,17 @@ services:
       # Optional: Override port (default: 3000)
       # - PORT=3000
 
+      # Security: Disable ALL security headers if having Docker issues
+      # ONLY use for debugging! Set to 'true' to disable all Helmet security
+      - DISABLE_SECURITY=true
+
       # Security: Disable CSP if having issues with CSS/JS loading
       # Set to 'true' to disable Content Security Policy (less secure, but fixes loading issues)
-      - DISABLE_CSP=false
+      - DISABLE_CSP=true
 
       # Security: Disable HSTS if accessing via IP instead of domain
       # Set to 'true' if you see HTTPS redirect issues
-      - DISABLE_HSTS=false
+      - DISABLE_HSTS=true
 
     # Resource limits (adjust based on your Raspberry Pi)
     deploy:

@@ -494,36 +494,46 @@ const PORT = config.server?.port || 3000;
 // ============================================
 
 // Security headers with helmet
-// Disable CSP in Docker/production if DISABLE_CSP env var is set
-const helmetConfig = {
-  crossOriginEmbedderPolicy: false, // Allow loading weather icons
-  hsts: process.env.DISABLE_HSTS === 'true' ? false : {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: false
-  }
-};
-
-// Only enable CSP if not explicitly disabled
-if (process.env.DISABLE_CSP !== 'true') {
-  helmetConfig.contentSecurityPolicy = {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https:"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com", "https:", "data:"],
-      imgSrc: ["'self'", "https://openweathermap.org", "https:", "http:", "data:", "blob:"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      connectSrc: ["'self'", "https://api.openweathermap.org", "https:", "http:"],
-      frameSrc: ["'none'"],
-      objectSrc: ["'none'"]
+// Disable all helmet security in Docker if DISABLE_SECURITY env var is set
+if (process.env.DISABLE_SECURITY === 'true') {
+  console.log('⚠️  All security headers disabled via DISABLE_SECURITY environment variable');
+  console.log('⚠️  This is NOT recommended for production, only for debugging Docker issues');
+  // Skip helmet entirely
+} else {
+  // Configure helmet with optional CSP/HSTS disabling
+  const helmetConfig = {
+    crossOriginEmbedderPolicy: false, // Allow loading weather icons
+    crossOriginResourcePolicy: false, // Allow cross-origin resources
+    crossOriginOpenerPolicy: false, // Allow cross-origin windows
+    originAgentCluster: false, // Disable origin-keyed agent clusters
+    hsts: process.env.DISABLE_HSTS === 'true' ? false : {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: false
     }
   };
-} else {
-  console.log('⚠️  CSP disabled via DISABLE_CSP environment variable');
-  helmetConfig.contentSecurityPolicy = false;
-}
 
-app.use(helmet(helmetConfig));
+  // Only enable CSP if not explicitly disabled
+  if (process.env.DISABLE_CSP !== 'true') {
+    helmetConfig.contentSecurityPolicy = {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https:"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "https:", "data:"],
+        imgSrc: ["'self'", "https://openweathermap.org", "https:", "http:", "data:", "blob:"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        connectSrc: ["'self'", "https://api.openweathermap.org", "https:", "http:"],
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"]
+      }
+    };
+  } else {
+    console.log('⚠️  CSP disabled via DISABLE_CSP environment variable');
+    helmetConfig.contentSecurityPolicy = false;
+  }
+
+  app.use(helmet(helmetConfig));
+}
 
 // Rate limiting - General API
 const apiLimiter = rateLimit({
