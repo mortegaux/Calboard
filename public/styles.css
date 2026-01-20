@@ -776,6 +776,11 @@ body {
   max-width: 800px;
 }
 
+.calendar-section.timeline-view {
+  max-width: 100%;
+  width: 100%;
+}
+
 /* Calendar Day Groups */
 .calendar-day {
   margin-bottom: 30px;
@@ -991,12 +996,13 @@ body {
 .timeline-view {
   display: none;
   flex-direction: column;
-  max-width: 100%;
+  width: 100%;
   overflow-x: auto;
 }
 
 .timeline-view.active {
   display: flex;
+  width: 100%;
 }
 
 .timeline-header {
@@ -1008,6 +1014,7 @@ body {
   background: var(--bg-primary);
   z-index: 10;
   padding: 10px 0;
+  width: 100%;
 }
 
 .timeline-time-gutter {
@@ -1030,8 +1037,7 @@ body {
   padding: 8px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 10px;
-  min-width: 80px;
-  max-width: 180px;
+  min-width: 120px;
 }
 
 .timeline-profile-avatar {
@@ -1079,6 +1085,7 @@ body {
 .timeline-grid {
   display: flex;
   position: relative;
+  width: 100%;
 }
 
 .timeline-hours {
@@ -1113,8 +1120,7 @@ body {
 .timeline-column {
   flex: 1;
   position: relative;
-  min-width: 80px;
-  max-width: 180px;
+  min-width: 120px;
 }
 
 .timeline-column-bg {
