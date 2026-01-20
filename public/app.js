@@ -784,20 +784,21 @@ class Calboard {
     const hourHeight = timelineConfig.hourHeight || 80;
     const showProfileImages = timelineConfig.showProfileImages !== false;
 
-    // Get all profiles with events today
+    // Get all visible profiles (show all profiles, even if no events today)
     const profilesWithEvents = new Map();
     this.config.profiles.forEach(profile => {
+      // Skip hidden profiles
+      if (this.hiddenProfiles.has(profile.id)) return;
+
       const profileEvents = todayEvents.filter(e => e.profileId === profile.id);
-      if (profileEvents.length > 0) {
-        profilesWithEvents.set(profile.id, {
-          ...profile,
-          events: profileEvents
-        });
-      }
+      profilesWithEvents.set(profile.id, {
+        ...profile,
+        events: profileEvents
+      });
     });
 
     if (profilesWithEvents.size === 0) {
-      container.innerHTML = '<div class="timeline-no-events">No events today</div>';
+      container.innerHTML = '<div class="timeline-no-events">No visible profiles</div>';
       return;
     }
 
