@@ -24,6 +24,18 @@ body {
   border-radius: 16px;
   padding: 40px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+/* Build Version */
+.build-version {
+  position: absolute;
+  top: 12px;
+  right: 20px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 500;
+  letter-spacing: 0.5px;
 }
 
 /* Progress Bar */

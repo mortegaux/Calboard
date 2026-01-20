@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  IMPORTANT: When making changes to setup wizard:
+  1. Increment build version in <div class="build-version"> (line ~15)
+  2. Update cache-busting version in <script src="setup.js?v=..."> at bottom
+  Format: YYYY.MM.DD.N (N = increment for same-day updates)
+-->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -11,6 +17,9 @@
 </head>
 <body>
   <div class="wizard-container">
+    <!-- Build Version -->
+    <div class="build-version">Build 2026.01.20.1</div>
+
     <!-- Progress Bar -->
     <div class="progress-bar">
       <div class="progress-steps">
@@ -357,6 +366,6 @@
     </div>
   </template>
 
-  <script src="setup.js?v=2.2"></script>
+  <script src="setup.js?v=2026.01.20.1"></script>
 </body>
 </html>
