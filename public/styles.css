@@ -996,13 +996,13 @@ body {
 .timeline-view {
   display: none;
   flex-direction: column;
-  width: 100%;
+  width: calc(100% + 40px);
+  margin-right: -40px;
   overflow-x: visible;
 }
 
 .timeline-view.active {
   display: flex;
-  width: 100%;
 }
 
 .timeline-header {
@@ -1115,6 +1115,7 @@ body {
   flex: 1;
   gap: 8px;
   position: relative;
+  overflow: visible;
 }
 
 .timeline-column {
@@ -1143,6 +1144,7 @@ body {
 .timeline-events {
   position: relative;
   height: 100%;
+  overflow: visible;
 }
 
 .timeline-event {
@@ -1207,21 +1209,23 @@ body {
   position: absolute;
   left: 0;
   right: 0;
-  height: 2px;
+  height: 3px;
   background: #ff4444;
-  z-index: 15;
+  z-index: 100;
   pointer-events: none;
+  box-shadow: 0 0 8px rgba(255, 68, 68, 0.8);
 }
 
 .timeline-current-time::before {
   content: '';
   position: absolute;
-  left: -4px;
-  top: -3px;
-  width: 8px;
-  height: 8px;
+  left: -5px;
+  top: -4px;
+  width: 11px;
+  height: 11px;
   background: #ff4444;
   border-radius: 50%;
+  box-shadow: 0 0 6px rgba(255, 68, 68, 0.6);
 }
 
 .timeline-no-events {
