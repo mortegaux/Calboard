@@ -252,6 +252,19 @@ class SetupWizard {
   }
 
   collectCalendars() {
+    // If no profiles were created, create a default profile
+    if (this.profiles.length === 0) {
+      console.log('No profiles created, creating default profile');
+      this.profiles.push({
+        id: 'profile-1',
+        name: 'Default',
+        color: '#4CAF50',
+        image: null,
+        visible: true,
+        calendars: []
+      });
+    }
+
     // Reset calendars in all profiles
     this.profiles.forEach(p => p.calendars = []);
 
@@ -260,8 +273,10 @@ class SetupWizard {
       const name = entry.querySelector('.calendar-name').value.trim();
       const url = entry.querySelector('.calendar-url').value.trim();
 
-      if (name && url && profileId) {
-        const profile = this.profiles.find(p => p.id === profileId);
+      if (name && url) {
+        // If no profile selected, assign to first profile
+        const targetProfileId = profileId || this.profiles[0]?.id;
+        const profile = this.profiles.find(p => p.id === targetProfileId);
         if (profile) {
           profile.calendars.push({
             id: `cal-${index + 1}`,
@@ -274,6 +289,7 @@ class SetupWizard {
     });
 
     this.config.profiles = this.profiles;
+    console.log('Final profiles config:', this.profiles);
   }
 
   updateProfileDropdowns() {

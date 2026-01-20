@@ -407,11 +407,16 @@ function loadConfig() {
 
 function saveConfig(newConfig) {
   try {
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(newConfig, null, 2));
+    console.log('saveConfig: Writing to', CONFIG_PATH);
+    const configJson = JSON.stringify(newConfig, null, 2);
+    console.log('saveConfig: JSON length:', configJson.length, 'bytes');
+    fs.writeFileSync(CONFIG_PATH, configJson);
     config = newConfig;
+    console.log('saveConfig: Successfully wrote config file');
     return true;
   } catch (err) {
-    console.error('Error saving config.json:', err.message);
+    console.error('Error saving config.json:', err);
+    console.error('Error stack:', err.stack);
     return false;
   }
 }
@@ -812,23 +817,33 @@ app.post('/api/setup/test-calendar', async (req, res) => {
 // Complete setup
 app.post('/api/setup/complete', async (req, res) => {
   try {
+    console.log('=== SETUP REQUEST RECEIVED ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+
     // Don't allow re-setup if already configured (unless via admin)
     if (isSetupComplete()) {
+      console.log('Setup already complete');
       return res.status(403).json({ success: false, error: 'Setup already complete. Use /admin to modify settings.' });
     }
 
     const newConfig = req.body;
 
     // Validate required fields
+    console.log('Validating weather API key...');
     if (!newConfig.weather?.apiKey) {
+      console.log('ERROR: Missing weather API key');
       return res.status(400).json({ success: false, error: 'Weather API key is required' });
     }
 
+    console.log('Validating latitude:', newConfig.weather?.latitude);
     if (!validateLatitude(newConfig.weather?.latitude)) {
+      console.log('ERROR: Invalid latitude');
       return res.status(400).json({ success: false, error: 'Invalid latitude' });
     }
 
+    console.log('Validating longitude:', newConfig.weather?.longitude);
     if (!validateLongitude(newConfig.weather?.longitude)) {
+      console.log('ERROR: Invalid longitude');
       return res.status(400).json({ success: false, error: 'Invalid longitude' });
     }
 
@@ -851,18 +866,34 @@ app.post('/api/setup/complete', async (req, res) => {
       delete newConfig.calendars;
     }
 
+    // Ensure profiles exist (create default if empty)
+    if (!newConfig.profiles || newConfig.profiles.length === 0) {
+      console.log('No profiles in config, creating default profile');
+      newConfig.profiles = [{
+        id: 'profile-1',
+        name: 'Default',
+        color: '#4CAF50',
+        image: null,
+        visible: true,
+        calendars: []
+      }];
+    }
+
     // Validate profiles and calendars
+    console.log('Validating profiles:', newConfig.profiles.length, 'profiles');
     if (newConfig.profiles) {
       for (const profile of newConfig.profiles) {
         if (profile.calendars) {
           for (const cal of profile.calendars) {
             if (cal.url && !validateUrl(cal.url)) {
+              console.log('ERROR: Invalid calendar URL:', cal.url);
               return res.status(400).json({ success: false, error: `Invalid URL for calendar: ${cal.name}` });
             }
           }
         }
       }
     }
+    console.log('✓ Profiles validated');
 
     // Hash password if provided
     if (newConfig.admin?.password) {
@@ -881,14 +912,19 @@ app.post('/api/setup/complete', async (req, res) => {
     // Mark setup as complete
     newConfig.setupComplete = true;
 
+    console.log('Attempting to save config...');
+    console.log('Final config:', JSON.stringify(newConfig, null, 2));
+
     if (saveConfig(newConfig)) {
+      console.log('✓ Config saved successfully');
       res.json({ success: true, message: 'Setup complete!' });
     } else {
+      console.log('ERROR: saveConfig returned false');
       res.status(500).json({ success: false, error: 'Failed to save configuration' });
     }
   } catch (err) {
     console.error('Setup error:', err);
-    res.status(500).json({ success: false, error: 'Setup failed' });
+    res.status(500).json({ success: false, error: 'Setup failed: ' + err.message });
   }
 });
 
