@@ -499,19 +499,19 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "https://openweathermap.org", "data:"],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+      imgSrc: ["'self'", "https://openweathermap.org", "https:", "data:", "blob:"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      connectSrc: ["'self'", "https://api.openweathermap.org"],
       frameSrc: ["'none'"],
-      objectSrc: ["'none'"],
-      upgradeInsecureRequests: []
+      objectSrc: ["'none'"]
     }
   },
   crossOriginEmbedderPolicy: false, // Allow loading weather icons
   hsts: {
     maxAge: 31536000,
-    includeSubDomains: true
+    includeSubDomains: true,
+    preload: false
   }
 }));
 
@@ -665,9 +665,22 @@ app.use(express.urlencoded({ extended: false, limit: '100kb' }));
 app.use('/api/', apiLimiter);
 
 // Serve static files with security headers
-app.use(express.static('public', {
+app.use(express.static(path.join(__dirname, 'public'), {
   dotfiles: 'ignore',
-  index: false // We'll handle index routing manually
+  index: false, // We'll handle index routing manually
+  maxAge: '1h', // Cache static assets for 1 hour
+  setHeaders: (res, filePath) => {
+    // Add CORS headers for static assets
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    // Cache CSS and JS for longer
+    if (filePath.endsWith('.css') || filePath.endsWith('.js')) {
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+    }
+    // Cache images for longer
+    if (filePath.match(/\.(jpg|jpeg|png|gif|svg|ico)$/)) {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+  }
 }));
 
 // ============================================
