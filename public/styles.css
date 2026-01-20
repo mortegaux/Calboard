@@ -1309,27 +1309,38 @@ body {
 }
 
 @media (max-width: 900px) {
-  /* MOBILE FIRST APPROACH: Calendar dominates, weather floats at bottom */
-  .dashboard {
-    display: block !important;
-    height: 100vh !important;
-    overflow: hidden !important;
-    position: relative !important;
+  /* CRITICAL: Allow scrolling on mobile - override base overflow:hidden */
+  html {
+    overflow-y: auto !important;
+    height: auto !important;
   }
 
-  /* CALENDAR - Full screen, scrollable */
-  .right-panel {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
-    height: 100vh !important;
+  body {
     overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important; /* Smooth scrolling on iOS */
+    height: auto !important;
+    min-height: 100vh !important;
+  }
+
+  /* Dashboard is just a simple container now */
+  .dashboard {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 100vh !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* CALENDAR - Normal block, scrolls with page */
+  .right-panel {
+    order: 1 !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: calc(100vh - 100px) !important;
+    flex: 1 !important;
+    overflow: visible !important;
     padding: 20px !important;
-    padding-bottom: 140px !important; /* Space for floating weather bar */
+    padding-bottom: 120px !important; /* Space for fixed weather bar */
   }
 
   /* WEATHER BAR - Fixed at bottom, floating on top */
@@ -1342,12 +1353,14 @@ body {
     height: 100px !important;
     min-height: 100px !important;
     max-height: 100px !important;
-    z-index: 100 !important;
+    z-index: 1000 !important;
     overflow: hidden !important;
     backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
     background: rgba(20, 24, 39, 0.95) !important;
     border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5) !important;
+    order: 2 !important;
   }
 
   /* Background image shouldn't interfere */
@@ -1355,7 +1368,7 @@ body {
     display: none !important;
   }
 
-  /* Weather section - ultra compact */
+  /* Weather section - ultra compact horizontal bar */
   .weather-section {
     padding: 12px 20px !important;
     height: 100% !important;
@@ -1441,10 +1454,10 @@ body {
 
   .right-panel {
     padding: 15px !important;
-    padding-bottom: 100px !important; /* Space for smaller weather bar */
+    padding-bottom: 90px !important; /* Space for smaller weather bar */
   }
 
-  /* Weather bar is smaller on phones */
+  /* Weather bar is smaller on phones - only 70px */
   .left-panel {
     height: 70px !important;
     min-height: 70px !important;

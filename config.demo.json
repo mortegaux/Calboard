@@ -1,0 +1,270 @@
+{
+  "weather": {
+    "apiKey": "demo-api-key-for-screenshot",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
+    "units": "imperial",
+    "showAlerts": true,
+    "showAirQuality": true,
+    "additionalLocations": []
+  },
+  "calendars": [
+    {
+      "name": "Personal",
+      "url": "https://example.com/calendar.ics",
+      "color": "#4CAF50"
+    },
+    {
+      "name": "Work",
+      "url": "https://example.com/work.ics",
+      "color": "#2196F3"
+    },
+    {
+      "name": "Family",
+      "url": "https://example.com/family.ics",
+      "color": "#FF9800"
+    }
+  ],
+  "display": {
+    "daysToShow": 7,
+    "refreshIntervalMinutes": 5,
+    "timeFormat": "12h",
+    "dateFormat": "en-US",
+    "theme": "dark",
+    "calendarView": "list",
+    "backgroundImage": null,
+    "backgroundSlideshow": false,
+    "slideshowInterval": 30,
+    "backgroundImages": [],
+    "showEventDuration": false,
+    "showEventCountdown": false,
+    "showTodayBadge": true,
+    "customCSS": "",
+    "hiddenCalendars": [],
+    "layout": {
+      "grid": {
+        "columns": 3,
+        "gap": "15px",
+        "minWidgetWidth": "280px"
+      },
+      "sectionOrder": ["weather", "calendar", "widgets"],
+      "panels": {
+        "weatherWidth": "520px",
+        "weatherMinWidth": "450px"
+      },
+      "widgets": {},
+      "mode": "grid"
+    },
+    "screensaverEnabled": false,
+    "screensaverStart": "22:00",
+    "screensaverEnd": "07:00",
+    "screensaverDimLevel": 20
+  },
+  "features": {
+    "screenWakeLock": true,
+    "offlineMode": true,
+    "birthdayRecognition": true,
+    "voiceAnnouncements": false,
+    "touchGestures": true,
+    "multiPage": false
+  },
+  "accessibility": {
+    "highContrast": false,
+    "largeText": false,
+    "reduceMotion": false
+  },
+  "server": {
+    "port": 3000,
+    "sessionSecret": "demo-session-secret-for-screenshot-only"
+  },
+  "admin": {
+    "password": null
+  },
+  "widgets": {
+    "news": {
+      "enabled": true,
+      "feeds": ["https://feeds.bbci.co.uk/news/rss.xml"],
+      "maxItems": 5,
+      "refreshMinutes": 30
+    },
+    "quotes": {
+      "enabled": true,
+      "category": "inspirational",
+      "refreshHours": 24
+    },
+    "moonPhase": {
+      "enabled": true
+    },
+    "stocks": {
+      "enabled": true,
+      "symbols": ["AAPL", "GOOGL", "TSLA"],
+      "refreshMinutes": 15
+    },
+    "tasks": {
+      "enabled": false,
+      "provider": "local",
+      "items": []
+    },
+    "wordOfDay": {
+      "enabled": false
+    },
+    "jokeOfDay": {
+      "enabled": false
+    },
+    "onThisDay": {
+      "enabled": false
+    },
+    "tides": {
+      "enabled": false,
+      "stationId": ""
+    },
+    "pollen": {
+      "enabled": false
+    },
+    "uvIndex": {
+      "enabled": false
+    },
+    "groceryList": {
+      "enabled": false,
+      "items": []
+    },
+    "chores": {
+      "enabled": false,
+      "items": []
+    },
+    "packages": {
+      "enabled": false,
+      "items": []
+    },
+    "medications": {
+      "enabled": false,
+      "items": []
+    },
+    "traffic": {
+      "enabled": false,
+      "origin": "",
+      "destination": ""
+    },
+    "transit": {
+      "enabled": false,
+      "stopId": ""
+    },
+    "flights": {
+      "enabled": false,
+      "flightNumber": ""
+    },
+    "gasPrices": {
+      "enabled": false,
+      "zipCode": ""
+    },
+    "crypto": {
+      "enabled": false,
+      "symbols": []
+    },
+    "sportsScores": {
+      "enabled": false,
+      "teams": []
+    },
+    "spotify": {
+      "enabled": false,
+      "clientId": "",
+      "clientSecret": ""
+    },
+    "tvSchedule": {
+      "enabled": false,
+      "shows": []
+    },
+    "photoFrame": {
+      "enabled": false,
+      "directory": "",
+      "interval": 60
+    },
+    "photos": {
+      "enabled": false,
+      "albums": []
+    },
+    "homeAssistant": {
+      "enabled": false,
+      "url": "",
+      "token": "",
+      "entities": []
+    },
+    "messageBoard": {
+      "enabled": false,
+      "messages": []
+    },
+    "sharedLists": {
+      "enabled": false,
+      "lists": []
+    },
+    "familyProfiles": {
+      "enabled": false,
+      "profiles": []
+    },
+    "systemStats": {
+      "enabled": false
+    },
+    "worldClocks": {
+      "enabled": false,
+      "timezones": []
+    },
+    "eventCountdowns": {
+      "enabled": false,
+      "events": []
+    },
+    "pomodoro": {
+      "enabled": false,
+      "workMinutes": 25,
+      "breakMinutes": 5
+    },
+    "habitTracker": {
+      "enabled": false,
+      "habits": []
+    },
+    "waterIntake": {
+      "enabled": false,
+      "dailyGoal": 8
+    },
+    "sleepSchedule": {
+      "enabled": false,
+      "bedtime": "22:00",
+      "wakeTime": "06:00"
+    },
+    "recipes": {
+      "enabled": false
+    },
+    "affirmations": {
+      "enabled": false,
+      "custom": []
+    },
+    "horoscope": {
+      "enabled": false,
+      "sign": ""
+    },
+    "trivia": {
+      "enabled": false,
+      "category": "general"
+    },
+    "garbageDay": {
+      "enabled": false,
+      "schedule": []
+    },
+    "mealPlanning": {
+      "enabled": false,
+      "meals": []
+    },
+    "petCare": {
+      "enabled": false,
+      "pets": []
+    },
+    "plantWatering": {
+      "enabled": false,
+      "plants": []
+    },
+    "laundryTimer": {
+      "enabled": false
+    }
+  },
+  "integrations": {},
+  "setupComplete": true
+}

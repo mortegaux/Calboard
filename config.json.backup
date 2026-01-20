@@ -1,0 +1,338 @@
+{
+  "weather": {
+    "apiKey": "7ef0702dc016ff2d5186617c43e6c488",
+    "latitude": 29.7227,
+    "longitude": -98.9891,
+    "units": "imperial",
+    "showAlerts": true,
+    "showAirQuality": true,
+    "additionalLocations": []
+  },
+  "profiles": [
+    {
+      "id": "maddie",
+      "name": "Maddie",
+      "color": "#0bc2da",
+      "image": null,
+      "calendars": [
+        {
+          "name": "Maddie",
+          "url": "https://calendar.google.com/calendar/ical/madelyn.ortega0806%40gmail.com/private-6ad1b99cfa771dec7f761fc1228a9273/basic.ics"
+        },
+        {
+          "name": "Maddie iUP",
+          "url": "https://iuniversityprep.instructure.com/feeds/calendars/user_tUgR8X2fHE0aduOOCG8aXsMG2sUAUSWw0rxnWVWy.ics"
+        }
+      ]
+    },
+    {
+      "id": "cameron-personal",
+      "name": "Cameron",
+      "color": "#00ff1e",
+      "image": null,
+      "calendars": [
+        {
+          "name": "Cameron Personal",
+          "url": "https://calendar.google.com/calendar/ical/cameron.l.ortega%40gmail.com/private-315cac3474053a698bdd713dba422276/basic.ics"
+        },
+        {
+          "name": "Cameron Headway",
+          "url": "https://api.headway.co/calendar/f79c3bc4-9968-40da-9c61-d1dd3b31b36a.ics"
+        }
+      ]
+    },
+    {
+      "id": "gigi",
+      "name": "Gigi",
+      "color": "#9c27b0",
+      "image": null,
+      "calendars": [
+        {
+          "name": "Gigi",
+          "url": "https://calendar.google.com/calendar/ical/gigi.ortega0120%40gmail.com/private-7f4a870f3e4690710d1d3ceda3c3ce04/basic.ics"
+        },
+        {
+          "name": "Gigi Soccer",
+          "url": "https://calendar.playmetrics.com/calendars/c989/t370285/p0/t45255DAA/f/calendar.ics"
+        }
+      ]
+    },
+    {
+      "id": "mike",
+      "name": "Mike",
+      "color": "#ff243a",
+      "image": null,
+      "calendars": [
+        {
+          "name": "Mike",
+          "url": "https://calendar.google.com/calendar/ical/miketuesday%40gmail.com/private-f2b7cc64c75f510b177bcf6b3a62a3a9/basic.ics"
+        }
+      ]
+    }
+  ],
+  "display": {
+    "daysToShow": 7,
+    "refreshIntervalMinutes": 5,
+    "timeFormat": "12h",
+    "dateFormat": "en-US",
+    "theme": "dark",
+    "calendarView": "list",
+    "backgroundImage": null,
+    "backgroundSlideshow": false,
+    "slideshowInterval": 30,
+    "backgroundImages": [],
+    "showEventDuration": false,
+    "showEventCountdown": false,
+    "showTodayBadge": false,
+    "customCSS": "",
+    "timelineView": {
+      "startHour": 7,
+      "endHour": 22,
+      "hourHeight": 80,
+      "showProfileImages": true
+    },
+    "hiddenCalendars": [],
+    "layout": {
+      "grid": {
+        "columns": 3,
+        "gap": "15px",
+        "minWidgetWidth": "280px"
+      },
+      "panels": {
+        "weatherWidth": "520px",
+        "weatherMinWidth": "450px"
+      },
+      "sectionOrder": [
+        "weather",
+        "calendar",
+        "widgets"
+      ],
+      "widgets": {},
+      "mode": "grid"
+    }
+  },
+  "features": {
+    "screenWakeLock": true,
+    "offlineMode": true,
+    "birthdayRecognition": true,
+    "voiceAnnouncements": false,
+    "touchGestures": true
+  },
+  "accessibility": {
+    "highContrast": false,
+    "largeText": true,
+    "reduceMotion": false
+  },
+  "server": {
+    "port": 3000,
+    "sessionSecret": "d7d879e1871db6062439611d9b90f861156f4c232c2ba678c3d7ac7a5fcf5a9484b90422190c83b0995c52241cf5e08d0cd23d3eac2502390a2a3de84c337bd5"
+  },
+  "admin": {
+    "passwordHash": "$2b$12$vBRJNAmdqC2fX9AwioCTT.H3k6RmB2xcJyt3MSfC2yN7dne7spKvu"
+  },
+  "widgets": {
+    "news": {
+      "enabled": false,
+      "feeds": [],
+      "maxItems": 5,
+      "refreshMinutes": 30
+    },
+    "quotes": {
+      "enabled": false,
+      "category": "inspirational",
+      "refreshHours": 24
+    },
+    "wordOfDay": {
+      "enabled": false
+    },
+    "jokeOfDay": {
+      "enabled": false
+    },
+    "onThisDay": {
+      "enabled": false
+    },
+    "moonPhase": {
+      "enabled": true
+    },
+    "tides": {
+      "enabled": false,
+      "stationId": ""
+    },
+    "pollen": {
+      "enabled": true
+    },
+    "uvIndex": {
+      "enabled": true
+    },
+    "tasks": {
+      "enabled": false,
+      "provider": "local",
+      "todoistApiKey": ""
+    },
+    "groceryList": {
+      "enabled": false,
+      "items": []
+    },
+    "chores": {
+      "enabled": false
+    },
+    "packages": {
+      "enabled": false
+    },
+    "medications": {
+      "enabled": false
+    },
+    "traffic": {
+      "enabled": false,
+      "googleMapsApiKey": "",
+      "routes": []
+    },
+    "transit": {
+      "enabled": false
+    },
+    "flights": {
+      "enabled": false
+    },
+    "gasPrices": {
+      "enabled": false,
+      "zipCode": ""
+    },
+    "stocks": {
+      "enabled": false,
+      "apiKey": "",
+      "symbols": []
+    },
+    "crypto": {
+      "enabled": false,
+      "coins": [
+        "bitcoin",
+        "ethereum"
+      ]
+    },
+    "currencyExchange": {
+      "enabled": false,
+      "baseCurrency": "USD",
+      "currencies": [
+        "EUR",
+        "GBP",
+        "JPY"
+      ]
+    },
+    "budgetTracker": {
+      "enabled": false
+    },
+    "sports": {
+      "enabled": false
+    },
+    "spotify": {
+      "enabled": false,
+      "clientId": "",
+      "clientSecret": "",
+      "refreshToken": ""
+    },
+    "tvSchedule": {
+      "enabled": false
+    },
+    "redditFeed": {
+      "enabled": false,
+      "subreddits": [
+        "worldnews",
+        "technology"
+      ],
+      "maxPosts": 5
+    },
+    "photos": {
+      "enabled": false
+    },
+    "photoFrame": {
+      "enabled": false
+    },
+    "homeAssistant": {
+      "enabled": false,
+      "url": "",
+      "token": "",
+      "entities": []
+    },
+    "energy": {
+      "enabled": false
+    },
+    "messageBoard": {
+      "enabled": false
+    },
+    "sharedLists": {
+      "enabled": false
+    },
+    "familyProfiles": {
+      "enabled": false
+    },
+    "systemStats": {
+      "enabled": false,
+      "showCpu": true,
+      "showMemory": true,
+      "showTemp": true,
+      "showNetwork": false
+    },
+    "worldClocks": {
+      "enabled": false
+    },
+    "eventCountdowns": {
+      "enabled": false
+    },
+    "pomodoroTimer": {
+      "enabled": false,
+      "workMinutes": 25,
+      "breakMinutes": 5,
+      "longBreakMinutes": 15,
+      "sessionsUntilLongBreak": 4
+    },
+    "habitTracker": {
+      "enabled": false
+    },
+    "waterIntake": {
+      "enabled": false,
+      "dailyGoal": 8,
+      "glassSize": 8
+    },
+    "sleepSchedule": {
+      "enabled": false,
+      "bedtime": "22:00",
+      "wakeTime": "06:00",
+      "reminderBefore": 30
+    },
+    "recipeOfDay": {
+      "enabled": false,
+      "dietary": "any"
+    },
+    "affirmations": {
+      "enabled": false,
+      "category": "general"
+    },
+    "horoscope": {
+      "enabled": false,
+      "sign": "aries"
+    },
+    "trivia": {
+      "enabled": false
+    },
+    "garbageDay": {
+      "enabled": false,
+      "schedule": []
+    },
+    "mealPlanner": {
+      "enabled": false
+    },
+    "petFeeding": {
+      "enabled": false
+    },
+    "plantWatering": {
+      "enabled": false
+    },
+    "laundryTimer": {
+      "enabled": false,
+      "washerMinutes": 45,
+      "dryerMinutes": 60
+    }
+  },
+  "integrations": {},
+  "setupComplete": true
+}
