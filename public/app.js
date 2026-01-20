@@ -947,6 +947,7 @@ class Calboard {
 
     const indicator = document.createElement('div');
     indicator.className = 'timeline-current-time';
+    indicator.id = 'current-time-indicator';
     indicator.style.top = `${topOffset}px`;
 
     // Find the timeline grid and add indicator
@@ -965,22 +966,20 @@ class Calboard {
       return;
     }
 
-    const topOffset = (currentHours - startHour) * hourHeight;
-    const rightPanel = document.querySelector('.right-panel');
-
-    if (rightPanel) {
-      // Scroll so current time is roughly in the middle of the viewport
-      const viewportHeight = rightPanel.clientHeight;
-      const scrollTop = topOffset - (viewportHeight / 2) + 200; // +200 for header offset
-
-      // Use smooth scroll
+    // Use requestAnimationFrame and delay to ensure DOM is ready
+    requestAnimationFrame(() => {
       setTimeout(() => {
-        rightPanel.scrollTo({
-          top: Math.max(0, scrollTop),
-          behavior: 'smooth'
-        });
-      }, 100); // Small delay to ensure DOM is fully rendered
-    }
+        const indicator = document.getElementById('current-time-indicator');
+
+        if (indicator) {
+          // Use scrollIntoView to center the current time indicator
+          indicator.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }
+      }, 300); // Delay for DOM rendering
+    });
   }
 
   renderWeekView() {
