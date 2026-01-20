@@ -20,7 +20,8 @@ const app = express();
 // ============================================
 
 let config;
-const CONFIG_PATH = './config.json';
+// Config path: use /app/data/config.json in Docker, ./config.json locally
+const CONFIG_PATH = process.env.CONFIG_PATH || (process.env.NODE_ENV === 'production' ? '/app/data/config.json' : './config.json');
 const BCRYPT_ROUNDS = 12;
 
 // Default configuration for first launch
@@ -408,15 +409,41 @@ function loadConfig() {
 function saveConfig(newConfig) {
   try {
     console.log('saveConfig: Writing to', CONFIG_PATH);
+    console.log('saveConfig: Current working directory:', process.cwd());
+    console.log('saveConfig: Process UID:', process.getuid ? process.getuid() : 'N/A');
+    console.log('saveConfig: Process GID:', process.getgid ? process.getgid() : 'N/A');
+
+    // Check if file exists and get stats
+    try {
+      const stats = fs.statSync(CONFIG_PATH);
+      console.log('saveConfig: File exists, mode:', stats.mode.toString(8), 'size:', stats.size);
+    } catch (e) {
+      console.log('saveConfig: File does not exist yet, will create new file');
+    }
+
+    // Check if directory is writable
+    const configDir = path.dirname(CONFIG_PATH);
+    try {
+      fs.accessSync(configDir, fs.constants.W_OK);
+      console.log('saveConfig: Directory is writable:', configDir);
+    } catch (e) {
+      console.error('saveConfig: Directory is NOT writable:', configDir, e.message);
+      throw new Error('Config directory is not writable: ' + e.message);
+    }
+
     const configJson = JSON.stringify(newConfig, null, 2);
     console.log('saveConfig: JSON length:', configJson.length, 'bytes');
-    fs.writeFileSync(CONFIG_PATH, configJson);
+
+    fs.writeFileSync(CONFIG_PATH, configJson, { mode: 0o644 });
     config = newConfig;
-    console.log('saveConfig: Successfully wrote config file');
+
+    console.log('saveConfig: ✓ Successfully wrote config file');
     return true;
   } catch (err) {
-    console.error('Error saving config.json:', err);
-    console.error('Error stack:', err.stack);
+    console.error('saveConfig ERROR:', err.message);
+    console.error('saveConfig ERROR code:', err.code);
+    console.error('saveConfig ERROR errno:', err.errno);
+    console.error('saveConfig ERROR stack:', err.stack);
     return false;
   }
 }

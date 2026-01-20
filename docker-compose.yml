@@ -13,8 +13,8 @@ services:
       - "3000:3000"
 
     volumes:
-      # Persist configuration across container updates
-      - ./config.json:/app/config.json
+      # Persist configuration in a data directory (avoids permission issues)
+      - calboard-data:/app/data
       # Optional: Mount custom backgrounds
       - ./public/backgrounds:/app/public/backgrounds
 
@@ -60,3 +60,7 @@ services:
 networks:
   calboard-network:
     driver: bridge
+
+volumes:
+  calboard-data:
+    driver: local
