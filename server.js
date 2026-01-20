@@ -1343,9 +1343,18 @@ app.get('/api/calendars', async (req, res) => {
     const todayGroup = grouped.find(g => g.date === todayKey);
     const todayEventCount = todayGroup ? todayGroup.events.length : 0;
 
-    // Calculate upcoming important events for countdown
+    // Calculate upcoming important events for countdown (filter out past events)
+    const currentTime = new Date(); // Use actual current time, not midnight
     const importantEvents = events
-      .filter(e => e.eventType === 'birthday' || e.eventType === 'anniversary' || e.eventType === 'holiday')
+      .filter(e => {
+        // Only include birthday, anniversary, or holiday events
+        if (e.eventType !== 'birthday' && e.eventType !== 'anniversary' && e.eventType !== 'holiday') {
+          return false;
+        }
+        // Filter out events that have already ended
+        const eventEnd = new Date(e.end);
+        return eventEnd > currentTime;
+      })
       .slice(0, 5)
       .map(e => ({
         ...e,

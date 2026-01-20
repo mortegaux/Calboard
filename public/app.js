@@ -591,7 +591,6 @@ class Calboard {
       this.calendarData = await response.json();
       this.renderCalendar();
       this.renderCountdowns();
-      this.updateTodayBadge();
 
       // Cache for offline
       if (this.config?.features?.offlineMode) {
@@ -606,25 +605,13 @@ class Calboard {
         this.calendarData = JSON.parse(cached);
         this.renderCalendar();
         this.renderCountdowns();
-        this.updateTodayBadge();
       } else {
         this.renderCalendarError(err.message);
       }
     }
   }
 
-  updateTodayBadge() {
-    const badge = document.getElementById('today-badge');
-    if (!badge || !this.config?.display?.showTodayBadge) {
-      badge.style.display = 'none';
-      return;
-    }
-
-    const count = this.calendarData?.todayEventCount || 0;
-    badge.textContent = count;
-    badge.style.display = count > 0 ? 'flex' : 'none';
-    badge.title = `${count} event${count !== 1 ? 's' : ''} today`;
-  }
+  // Removed updateTodayBadge() - badge element removed from UI
 
   renderCalendarFilters() {
     const container = document.getElementById('calendar-filters');
