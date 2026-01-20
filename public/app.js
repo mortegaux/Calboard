@@ -824,6 +824,9 @@ class Calboard {
 
     // Add current time indicator
     this.addCurrentTimeIndicator(startHour, endHour, hourHeight);
+
+    // Auto-scroll to current time
+    this.scrollToCurrentTime(startHour, endHour, hourHeight);
   }
 
   renderTimelineProfileHeader(profile, showProfileImages) {
@@ -950,6 +953,33 @@ class Calboard {
     const timelineColumns = document.querySelector('.timeline-columns');
     if (timelineColumns) {
       timelineColumns.appendChild(indicator);
+    }
+  }
+
+  scrollToCurrentTime(startHour, endHour, hourHeight) {
+    const now = new Date();
+    const currentHours = now.getHours() + now.getMinutes() / 60;
+
+    // Only scroll if current time is within visible hours
+    if (currentHours < startHour || currentHours > endHour) {
+      return;
+    }
+
+    const topOffset = (currentHours - startHour) * hourHeight;
+    const rightPanel = document.querySelector('.right-panel');
+
+    if (rightPanel) {
+      // Scroll so current time is roughly in the middle of the viewport
+      const viewportHeight = rightPanel.clientHeight;
+      const scrollTop = topOffset - (viewportHeight / 2) + 200; // +200 for header offset
+
+      // Use smooth scroll
+      setTimeout(() => {
+        rightPanel.scrollTo({
+          top: Math.max(0, scrollTop),
+          behavior: 'smooth'
+        });
+      }, 100); // Small delay to ensure DOM is fully rendered
     }
   }
 

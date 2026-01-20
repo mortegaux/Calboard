@@ -997,7 +997,7 @@ body {
   display: none;
   flex-direction: column;
   width: 100%;
-  overflow-x: auto;
+  overflow-x: visible;
 }
 
 .timeline-view.active {
@@ -1033,16 +1033,16 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 8px;
+  gap: 3px;
+  padding: 6px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
+  border-radius: 8px;
   min-width: 120px;
 }
 
 .timeline-profile-avatar {
-  width: 45px;
-  height: 45px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   overflow: hidden;
   border: 2px solid;
@@ -1060,13 +1060,13 @@ body {
 }
 
 .timeline-profile-avatar-initials {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .timeline-profile-name {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-primary);
   text-align: center;
@@ -1077,7 +1077,7 @@ body {
 }
 
 .timeline-profile-count {
-  font-size: 12px;
+  font-size: 11px;
   opacity: 0.6;
   white-space: nowrap;
 }
