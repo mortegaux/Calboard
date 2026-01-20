@@ -654,8 +654,13 @@ class Calboard {
   }
 
   renderCalendar() {
-    // Always render list view (week view removed for TV display)
-    this.renderListView();
+    const viewType = this.config?.display?.calendarView || 'list';
+
+    if (viewType === 'timeline') {
+      this.renderTimelineView();
+    } else {
+      this.renderListView();
+    }
   }
 
   renderListView() {
@@ -735,6 +740,216 @@ class Calboard {
 
       container.appendChild(dayEl);
     });
+  }
+
+  renderTimelineView() {
+    const container = document.getElementById('calendar-section');
+    const data = this.calendarData;
+
+    container.innerHTML = '';
+    container.className = 'timeline-view active';
+
+    if (!data || !data.events || data.events.length === 0) {
+      container.innerHTML = '<div class="timeline-no-events">No upcoming events</div>';
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0];
+
+    // Get today's events
+    const todayData = data.events.find(d => d.date === todayStr);
+    if (!todayData || todayData.events.length === 0) {
+      container.innerHTML = '<div class="timeline-no-events">No events today</div>';
+      return;
+    }
+
+    const now = new Date();
+    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
+
+    // Filter out hidden profiles and past events (with 30min grace)
+    let todayEvents = todayData.events.filter(e => {
+      if (this.hiddenProfiles.has(e.profileId)) return false;
+      if (e.allDay) return true;
+
+      const eventEnd = new Date(e.end);
+      return eventEnd > thirtyMinutesAgo;
+    });
+
+    // Get timeline config
+    const timelineConfig = this.config?.display?.timelineView || {};
+    const startHour = timelineConfig.startHour || 6;
+    const endHour = timelineConfig.endHour || 23;
+    const hourHeight = timelineConfig.hourHeight || 80;
+    const showProfileImages = timelineConfig.showProfileImages !== false;
+
+    // Get all profiles with events today
+    const profilesWithEvents = new Map();
+    this.config.profiles.forEach(profile => {
+      const profileEvents = todayEvents.filter(e => e.profileId === profile.id);
+      if (profileEvents.length > 0) {
+        profilesWithEvents.set(profile.id, {
+          ...profile,
+          events: profileEvents
+        });
+      }
+    });
+
+    if (profilesWithEvents.size === 0) {
+      container.innerHTML = '<div class="timeline-no-events">No events today</div>';
+      return;
+    }
+
+    // Build timeline HTML
+    const timelineHtml = `
+      <div class="timeline-header">
+        <div class="timeline-time-gutter"></div>
+        <div class="timeline-profiles">
+          ${Array.from(profilesWithEvents.values()).map(profile => this.renderTimelineProfileHeader(profile, showProfileImages)).join('')}
+        </div>
+      </div>
+      <div class="timeline-grid">
+        <div class="timeline-hours">
+          ${this.renderTimelineHours(startHour, endHour)}
+        </div>
+        <div class="timeline-columns">
+          ${Array.from(profilesWithEvents.values()).map(profile => this.renderTimelineColumn(profile, startHour, endHour, hourHeight)).join('')}
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = timelineHtml;
+
+    // Add current time indicator
+    this.addCurrentTimeIndicator(startHour, endHour, hourHeight);
+  }
+
+  renderTimelineProfileHeader(profile, showProfileImages) {
+    const initials = profile.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarContent = showProfileImages && profile.image
+      ? `<img src="${this.escapeHtml(profile.image)}" alt="${this.escapeHtml(profile.name)}">`
+      : `<div class="timeline-profile-avatar-initials">${initials}</div>`;
+
+    return `
+      <div class="timeline-profile-header">
+        <div class="timeline-profile-avatar" style="border-color: ${profile.color}">
+          ${avatarContent}
+        </div>
+        <div class="timeline-profile-name">${this.escapeHtml(profile.name)}</div>
+        <div class="timeline-profile-count">${profile.events.length} event${profile.events.length !== 1 ? 's' : ''}</div>
+      </div>
+    `;
+  }
+
+  renderTimelineHours(startHour, endHour) {
+    const hours = [];
+    for (let hour = startHour; hour <= endHour; hour++) {
+      const timeStr = this.config?.display?.timeFormat === '24h'
+        ? `${hour}:00`
+        : `${hour > 12 ? hour - 12 : hour === 0 ? 12 : hour}${hour >= 12 ? 'pm' : 'am'}`;
+      hours.push(`<div class="timeline-hour">${timeStr}</div>`);
+    }
+    return hours.join('');
+  }
+
+  renderTimelineColumn(profile, startHour, endHour, hourHeight) {
+    const hourLines = [];
+    const numHours = endHour - startHour + 1;
+
+    for (let i = 0; i < numHours; i++) {
+      hourLines.push('<div class="timeline-hour-line"></div>');
+    }
+
+    const eventsHtml = profile.events.map(event => {
+      return this.renderTimelineEvent(event, startHour, endHour, hourHeight);
+    }).join('');
+
+    return `
+      <div class="timeline-column">
+        <div class="timeline-column-bg">
+          ${hourLines.join('')}
+        </div>
+        <div class="timeline-events" style="height: ${numHours * hourHeight}px">
+          ${eventsHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  renderTimelineEvent(event, startHour, endHour, hourHeight) {
+    if (event.allDay) {
+      // Position all-day events at the top
+      return `
+        <div class="timeline-event all-day" style="
+          border-left-color: ${event.color};
+          background-color: ${event.color}22;
+          top: 5px;
+          height: 40px;
+        ">
+          <div class="timeline-event-time">All Day</div>
+          <div class="timeline-event-title">${this.escapeHtml(event.title)}</div>
+        </div>
+      `;
+    }
+
+    const eventStart = new Date(event.start);
+    const eventEnd = new Date(event.end);
+
+    // Calculate position (hours from start of day)
+    const startHours = eventStart.getHours() + eventStart.getMinutes() / 60;
+    const endHours = eventEnd.getHours() + eventEnd.getMinutes() / 60;
+
+    // Calculate position relative to timeline start
+    const topOffset = (startHours - startHour) * hourHeight;
+    const duration = endHours - startHours;
+    const height = Math.max(duration * hourHeight, 40); // Minimum 40px height
+
+    // Skip if event is outside visible hours
+    if (startHours < startHour || startHours > endHour) {
+      return '';
+    }
+
+    const timeStr = this.formatEventTime(event.start);
+    const eventTypeClass = event.eventType !== 'regular' ? event.eventType : '';
+    const locationHtml = event.location
+      ? `<div class="timeline-event-location">${this.escapeHtml(event.location)}</div>`
+      : '';
+
+    return `
+      <div class="timeline-event ${eventTypeClass}" style="
+        border-left-color: ${event.color};
+        background-color: ${event.color}22;
+        top: ${topOffset}px;
+        height: ${height}px;
+      ">
+        <div class="timeline-event-time">${timeStr}</div>
+        <div class="timeline-event-title">${this.escapeHtml(event.title)}</div>
+        ${locationHtml}
+      </div>
+    `;
+  }
+
+  addCurrentTimeIndicator(startHour, endHour, hourHeight) {
+    const now = new Date();
+    const currentHours = now.getHours() + now.getMinutes() / 60;
+
+    // Only show if current time is within visible hours
+    if (currentHours < startHour || currentHours > endHour) {
+      return;
+    }
+
+    const topOffset = (currentHours - startHour) * hourHeight;
+
+    const indicator = document.createElement('div');
+    indicator.className = 'timeline-current-time';
+    indicator.style.top = `${topOffset}px`;
+
+    // Find the timeline grid and add indicator
+    const timelineColumns = document.querySelector('.timeline-columns');
+    if (timelineColumns) {
+      timelineColumns.appendChild(indicator);
+    }
   }
 
   renderWeekView() {

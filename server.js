@@ -53,6 +53,12 @@ const DEFAULT_CONFIG = {
     showEventCountdown: true,
     showTodayBadge: true,
     calendarView: 'list',
+    timelineView: {
+      startHour: 6,
+      endHour: 23,
+      hourHeight: 80,
+      showProfileImages: true
+    },
     hiddenProfiles: [],
     layout: {
       grid: {

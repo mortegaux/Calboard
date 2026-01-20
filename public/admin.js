@@ -744,6 +744,21 @@ class CalboardAdmin {
     document.getElementById('display-show-badge').checked = this.config.display?.showTodayBadge !== false;
     document.getElementById('display-custom-css').value = this.config.display?.customCSS || '';
 
+    // Timeline settings
+    const timelineConfig = this.config.display?.timelineView || {};
+    document.getElementById('timeline-start-hour').value = timelineConfig.startHour || 6;
+    document.getElementById('timeline-end-hour').value = timelineConfig.endHour || 23;
+    document.getElementById('timeline-hour-height').value = timelineConfig.hourHeight || 80;
+    document.getElementById('timeline-show-profile-images').checked = timelineConfig.showProfileImages !== false;
+
+    // Show/hide timeline settings based on current view
+    const timelineCard = document.getElementById('timeline-settings-card');
+    if (this.config.display?.calendarView === 'timeline') {
+      timelineCard.style.display = 'block';
+    } else {
+      timelineCard.style.display = 'none';
+    }
+
     // Features
     document.getElementById('feature-wakelock').checked = this.config.features?.screenWakeLock !== false;
     document.getElementById('feature-offline').checked = this.config.features?.offlineMode !== false;
@@ -1766,6 +1781,16 @@ class CalboardAdmin {
       }
     });
 
+    // Calendar view change handler - show/hide timeline settings
+    document.getElementById('display-calendar-view').addEventListener('change', (e) => {
+      const timelineCard = document.getElementById('timeline-settings-card');
+      if (e.target.value === 'timeline') {
+        timelineCard.style.display = 'block';
+      } else {
+        timelineCard.style.display = 'none';
+      }
+    });
+
     // Track changes
     document.querySelectorAll('input, select, textarea').forEach(el => {
       el.addEventListener('change', () => {
@@ -2108,6 +2133,12 @@ class CalboardAdmin {
         showEventCountdown: document.getElementById('display-show-countdown').checked,
         showTodayBadge: document.getElementById('display-show-badge').checked,
         customCSS: document.getElementById('display-custom-css').value,
+        timelineView: {
+          startHour: parseInt(document.getElementById('timeline-start-hour').value) || 6,
+          endHour: parseInt(document.getElementById('timeline-end-hour').value) || 23,
+          hourHeight: parseInt(document.getElementById('timeline-hour-height').value) || 80,
+          showProfileImages: document.getElementById('timeline-show-profile-images').checked
+        },
         hiddenCalendars: this.config.display?.hiddenCalendars || [],
         layout: this.layoutManager ? this.layoutManager.collectFormData() : (this.config.display?.layout || {})
       },
