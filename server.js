@@ -494,26 +494,36 @@ const PORT = config.server?.port || 3000;
 // ============================================
 
 // Security headers with helmet
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-      imgSrc: ["'self'", "https://openweathermap.org", "https:", "data:", "blob:"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      connectSrc: ["'self'", "https://api.openweathermap.org"],
-      frameSrc: ["'none'"],
-      objectSrc: ["'none'"]
-    }
-  },
+// Disable CSP in Docker/production if DISABLE_CSP env var is set
+const helmetConfig = {
   crossOriginEmbedderPolicy: false, // Allow loading weather icons
-  hsts: {
+  hsts: process.env.DISABLE_HSTS === 'true' ? false : {
     maxAge: 31536000,
     includeSubDomains: true,
     preload: false
   }
-}));
+};
+
+// Only enable CSP if not explicitly disabled
+if (process.env.DISABLE_CSP !== 'true') {
+  helmetConfig.contentSecurityPolicy = {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https:"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "https:", "data:"],
+      imgSrc: ["'self'", "https://openweathermap.org", "https:", "http:", "data:", "blob:"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      connectSrc: ["'self'", "https://api.openweathermap.org", "https:", "http:"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"]
+    }
+  };
+} else {
+  console.log('⚠️  CSP disabled via DISABLE_CSP environment variable');
+  helmetConfig.contentSecurityPolicy = false;
+}
+
+app.use(helmet(helmetConfig));
 
 // Rate limiting - General API
 const apiLimiter = rateLimit({
@@ -665,19 +675,28 @@ app.use(express.urlencoded({ extended: false, limit: '100kb' }));
 app.use('/api/', apiLimiter);
 
 // Serve static files with security headers
-app.use(express.static(path.join(__dirname, 'public'), {
+const publicPath = path.join(__dirname, 'public');
+console.log(`📁 Serving static files from: ${publicPath}`);
+
+app.use(express.static(publicPath, {
   dotfiles: 'ignore',
   index: false, // We'll handle index routing manually
   maxAge: '1h', // Cache static assets for 1 hour
   setHeaders: (res, filePath) => {
     // Add CORS headers for static assets
     res.setHeader('Access-Control-Allow-Origin', '*');
-    // Cache CSS and JS for longer
-    if (filePath.endsWith('.css') || filePath.endsWith('.js')) {
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+
+    // Ensure correct MIME types
+    if (filePath.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
       res.setHeader('Cache-Control', 'public, max-age=3600');
-    }
-    // Cache images for longer
-    if (filePath.match(/\.(jpg|jpeg|png|gif|svg|ico)$/)) {
+    } else if (filePath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+    } else if (filePath.endsWith('.json')) {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    } else if (filePath.match(/\.(jpg|jpeg|png|gif|svg|ico)$/)) {
       res.setHeader('Cache-Control', 'public, max-age=86400');
     }
   }

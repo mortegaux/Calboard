@@ -24,6 +24,14 @@ services:
       # Optional: Override port (default: 3000)
       # - PORT=3000
 
+      # Security: Disable CSP if having issues with CSS/JS loading
+      # Set to 'true' to disable Content Security Policy (less secure, but fixes loading issues)
+      - DISABLE_CSP=false
+
+      # Security: Disable HSTS if accessing via IP instead of domain
+      # Set to 'true' if you see HTTPS redirect issues
+      - DISABLE_HSTS=false
+
     # Resource limits (adjust based on your Raspberry Pi)
     deploy:
       resources:
